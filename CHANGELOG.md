@@ -4,6 +4,27 @@ All notable changes to pogo are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-11-25
+
+### Added
+- **Windows support**, with the same commands and rules as on macOS:
+  - all-apps mode with a Wintun adapter and `netsh` routes in the non-persistent store
+    (a restart always clears them), started through a UAC prompt; `pogo off` needs none
+  - basic mode through the Windows proxy settings (WinINet); previous settings are saved and
+    restored, with a one-time sign-in task in case the PC restarts while pogo is on
+  - passwords in Windows Credential Manager
+  - `install.ps1`: one-line installer that needs no admin rights and no git
+  - `pogo import` reads Proxifier for Windows profiles
+  - `pogo env --shell powershell|cmd|sh`
+- `pogo helper` downloads official tun2socks builds (and Wintun on Windows), verified against
+  pinned checksums. Go is no longer needed on macOS.
+- End-to-end test workflow that turns all-apps mode on for real on macOS and Windows runners.
+- `pogo doctor` checks for Group Policy proxy locks and IPv6.
+
+### Fixed
+- macOS: in all-apps mode, pogo's own connections (direct rules, and the hop to the proxy) could
+  fail with "Network is unreachable". pogo now adds a default route scoped to the real interface.
+
 ## [0.2.0] - 2026-11-25
 
 First public release.
@@ -33,5 +54,6 @@ First public release.
 - macOS system proxy on/off, `pogo env` and `pogo run` for terminal tools.
 - Password storage in the macOS Keychain.
 
+[0.3.0]: https://github.com/kharshit801/pogo/releases/tag/v0.3.0
 [0.2.0]: https://github.com/kharshit801/pogo/releases/tag/v0.2.0
 [0.1.0]: https://github.com/kharshit801/pogo/commits/main
