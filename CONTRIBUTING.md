@@ -1,0 +1,56 @@
+# Contributing to pogo
+
+Thanks for helping! pogo is small on purpose, and the whole codebase can be read in an afternoon.
+
+## Setup
+
+```sh
+git clone https://github.com/kharshit801/pogo && cd pogo
+make test        # ~40 tests, under 10 seconds, no network or admin rights needed
+make install     # links ./bin/pogo into ~/.local/bin, so `pogo` runs your working copy
+```
+
+There's nothing to `pip install`: pogo uses only the Python standard library (3.9+).
+
+## Ground rules
+
+- **No dependencies.** Standard library only. tun2socks is the single optional external helper.
+- **Python 3.9 compatible.** macOS may run pogo with an older `python3` under `sudo`.
+- **Explain yourself to the user.** Every message should say what happened and what to do next.
+  New commands need a description and examples in `build_parser()` (that's what `pogo help` shows).
+- **Never leave the network broken.** Anything that changes system state must be undone by
+  `pogo off`, by the watchdog, and by `pogo reset`.
+- **Tests must not touch the real system.** No real routes, system proxy or Keychain writes in
+  tests. Use fakes, a temporary `POGO_HOME` and `POGO_PASSWORD`, as the existing tests do.
+
+## Project layout
+
+See [docs/architecture.md](docs/architecture.md#source-layout) for what each file does.
+
+## Testing all-apps mode by hand
+
+All-apps mode changes real routes, so CI can't test it. To try your changes:
+
+```sh
+sudo pogo tun --dry-run   # print every route and command without running them
+pogo on                   # the real thing
+pogo logs -f              # watch decisions
+pogo off                  # or, if anything is stuck: pogo reset
+```
+
+Routes never survive a reboot, so a restart is always a clean slate.
+
+## Docs and screenshots
+
+- `docs/commands.md` is generated from the CLI's own help: `make docs`.
+- The terminal images in `docs/assets` are rendered from real output: `make screenshots`.
+
+## Pull requests
+
+1. Open an issue first for anything bigger than a bug fix, so we can agree on the approach.
+2. Keep PRs focused, with tests for new behavior.
+3. Run `make test` and `make docs` before pushing.
+4. Describe what you changed and how you tested it. The PR template will prompt you.
+
+By contributing you agree that your work is released under the [MIT license](LICENSE), and to
+follow the [code of conduct](CODE_OF_CONDUCT.md).

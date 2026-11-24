@@ -1,0 +1,55 @@
+name: Bug report
+description: Something doesn't work as described
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! If your network is stuck, `pogo reset` puts it back to normal.
+        **Never paste passwords.** You may want to replace your proxy's address with `PROXY`.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you run, what did you expect, and what happened instead?
+      placeholder: I ran `pogo on` and ...
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `pogo doctor`
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log lines
+      description: From `pogo logs` or `~/.config/pogo/tun.log`, if any.
+      render: text
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options:
+        - all apps (pogo on)
+        - basic (pogo on --basic)
+        - not turned on
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: e.g. macOS 15.4
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: pogo version
+      description: Output of `pogo --version`
+      placeholder: pogo 0.2.0
+    validations:
+      required: true

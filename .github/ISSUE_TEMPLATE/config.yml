@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security issue
+    url: https://github.com/kharshit801/pogo/security/advisories/new
+    about: Please report vulnerabilities privately instead of opening a public issue.
+  - name: Troubleshooting guide
+    url: https://github.com/kharshit801/pogo/blob/main/docs/troubleshooting.md
+    about: Most problems have a quick fix. Try `pogo doctor` as well.
