@@ -1,0 +1,33 @@
+name: E2E
+
+# Runs the real all-apps capture on GitHub's machines: creates the virtual interface, installs
+# the routes, sends a request through a test proxy, then checks that pogo off cleans up.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  all-apps:
+    name: All-apps capture on ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            name: macOS
+          - os: windows-latest
+            name: Windows
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Real capture through a test proxy
+        run: python tests/e2e/run_e2e.py
