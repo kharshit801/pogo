@@ -10,11 +10,12 @@ permissions:
 
 jobs:
   test:
-    name: Python ${{ matrix.python }} on macOS
-    runs-on: macos-latest
+    name: ${{ matrix.os == 'windows-latest' && 'Windows' || 'macOS' }} · Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [macos-latest, windows-latest]
         python: ["3.10", "3.12", "3.14"]
     steps:
       - uses: actions/checkout@v5
@@ -25,17 +26,17 @@ jobs:
         run: python -m compileall -q pogo tests scripts
       - name: Unit tests
         run: python -m unittest discover -s tests -v
+      - name: CLI smoke test
+        run: python tests/cli_smoke.py
       - name: Install as a package
         run: |
           python -m pip install --quiet .
           pogo --version
-          pogo help on
-      - name: CLI smoke test
+      - name: Windows installer (Windows PowerShell 5.1, the way users run it)
+        if: runner.os == 'Windows'
+        shell: powershell
         run: |
-          export POGO_HOME="$(mktemp -d)"
-          ./bin/pogo
-          ./bin/pogo setup --host 10.0.0.1 --port 3128 --type http --user ci
-          ./bin/pogo rules add "*.example.com" block --at 1
-          ./bin/pogo rules check www.example.com
-          ./bin/pogo status
-          ./bin/pogo tun --dry-run
+          $env:POGO_SOURCE = (Get-Location).Path
+          Get-Content .\install.ps1 -Raw | Invoke-Expression
+          & "$env:USERPROFILE\.pogo\bin\pogo.cmd" --version
+          if ($LASTEXITCODE -ne 0) { exit 1 }
