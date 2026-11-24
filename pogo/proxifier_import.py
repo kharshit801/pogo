@@ -2,16 +2,23 @@
 from __future__ import annotations
 
 import ipaddress
+import os
 import plistlib
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from . import system
 from .config import DEFAULT_DIRECT
 
 CONTAINER = Path.home() / "Library/Containers/com.initex.proxifier.v3.macos/Data"
-PROFILES_DIR = CONTAINER / "Profiles"
 PREFS_FILE = CONTAINER / "Library/Preferences/com.initex.proxifier.v3.macos.plist"
+if system.IS_WINDOWS:
+    # Proxifier v4 for Windows: per-user profiles, plus an optional machine-wide Default.ppx
+    PROFILE_DIRS = [Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming") / "Proxifier4" / "Profiles",
+                    Path(os.environ.get("ProgramData") or r"C:\ProgramData") / "Proxifier"]
+else:
+    PROFILE_DIRS = [CONTAINER / "Profiles"]
 
 # Proxifier "HTTPS" proxies are ordinary HTTP proxies used with CONNECT (what pogo does).
 TYPE_MAP = {"HTTPS": "http", "HTTP": "http", "SOCKS5": "socks5"}
@@ -27,6 +34,7 @@ class Profile:
     name: str
     path: Path
     active: bool = False
+    note: str = ""   # why it's marked: "active in Proxifier" or "most recently changed"
 
 
 @dataclass
@@ -40,6 +48,8 @@ class Converted:
 
 
 def active_profile_name() -> str | None:
+    if system.IS_WINDOWS:
+        return None  # Proxifier for Windows doesn't record it in a documented place
     try:
         return plistlib.loads(PREFS_FILE.read_bytes()).get("SettingsActiveProfile")
     except (OSError, ValueError, plistlib.InvalidFileException):
@@ -47,13 +57,21 @@ def active_profile_name() -> str | None:
 
 
 def list_profiles() -> list[Profile]:
-    try:
-        files = sorted(PROFILES_DIR.glob("*.ppx"))
-    except PermissionError:
-        raise ImportProblem("macOS blocked access to Proxifier's files. Allow it if a popup asks, or "
-                            "export the profile from Proxifier and run: pogo import <file.ppx>")
+    files: list[Path] = []
+    for folder in PROFILE_DIRS:
+        try:
+            files += sorted(folder.glob("*.ppx"))
+        except PermissionError:
+            raise ImportProblem("access to Proxifier's files was blocked. Allow it if a popup asks, or "
+                                "export the profile from Proxifier and run: pogo import <file.ppx>")
+    if not files:
+        return []
     active = active_profile_name()
-    return [Profile(p.stem, p, p.stem == active) for p in files]
+    if active is not None:
+        return [Profile(p.stem, p, p.stem == active, "active in Proxifier" if p.stem == active else "")
+                for p in files]
+    newest = max(files, key=lambda p: p.stat().st_mtime)  # best guess on Windows
+    return [Profile(p.stem, p, p == newest, "most recently changed" if p == newest else "") for p in files]
 
 
 def locate(choice: str | None = None) -> Profile:

@@ -1,7 +1,10 @@
-"""macOS system proxy settings (System Settings → Network → Proxies), via `networksetup`."""
+"""System proxy settings. macOS: System Settings → Network → Proxies, via `networksetup`.
+Windows: the same functions, implemented in winproxy.py (WinINet)."""
 from __future__ import annotations
 
 import subprocess
+
+from . import system
 
 
 def _run(args: list[str]) -> subprocess.CompletedProcess:
@@ -75,3 +78,7 @@ def effective() -> tuple[bool, str]:
         if fields.get(f"{kind}Enable") == "1":
             return True, f"{fields.get(f'{kind}Proxy', '')}:{fields.get(f'{kind}Port', '')}"
     return False, ""
+
+
+if system.IS_WINDOWS:
+    from .winproxy import disable, effective, enable, pointing_to, services, web_proxy  # noqa: E402,F401,F811

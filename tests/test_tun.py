@@ -28,22 +28,23 @@ default            10.20.30.1        UGScg                 en6
 class ParsingTests(unittest.TestCase):
     def test_primary_route_skips_interface_scoped_defaults(self):
         with mock.patch.object(tun, "_out", return_value=NETSTAT):
-            self.assertEqual(tun.primary_route(), ("en6", "10.20.30.1"))
+            self.assertEqual(tun.MacNet().primary_route(), ("en6", "10.20.30.1"))
 
     def test_primary_route_without_gateway(self):
         with mock.patch.object(tun, "_out", return_value="default  link#15  UCS  en6\n"):
-            self.assertEqual(tun.primary_route(), ("en6", None))
+            self.assertEqual(tun.MacNet().primary_route(), ("en6", None))
 
     def test_leftover_capture_routes_are_detected(self):
         with mock.patch.object(tun, "_out", return_value=NETSTAT), \
-                mock.patch.object(tun.subprocess, "run", return_value=mock.Mock(returncode=1)):
-            self.assertIn("capture routes", tun.leftovers())
+                mock.patch.object(tun.system, "run", return_value=mock.Mock(returncode=1)):
+            self.assertIn("capture routes", tun.MacNet().leftovers())
 
     def test_cleanup_only_runs_well_formed_route_deletes(self):
-        good = ["route", "-n", "delete", "-host", "10.20.30.40"]
-        self.assertTrue(all(tun._ROUTE_ARG.match(a) for a in good[3:]))
+        net = tun.MacNet()
+        self.assertTrue(net.valid_delete(["route", "-n", "delete", "-host", "10.20.30.40"]))
         for evil in (";rm -rf /", "$(id)", "--", "-flush", "a b"):
-            self.assertIsNone(tun._ROUTE_ARG.match(evil), evil)
+            self.assertFalse(net.valid_delete(["route", "-n", "delete", evil]), evil)
+        self.assertFalse(net.valid_delete(["rm", "-rf", "/"]))
 
 
 class FakeCapture:
@@ -63,7 +64,8 @@ class FakeCapture:
 
 class BackgroundTests(unittest.TestCase):
     def setUp(self):
-        saved = {s: signal.getsignal(s) for s in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)}
+        names = ("SIGINT", "SIGTERM", "SIGHUP")
+        saved = {getattr(signal, n): signal.getsignal(getattr(signal, n)) for n in names if hasattr(signal, n)}
         self.addCleanup(lambda: [signal.signal(s, h) for s, h in saved.items()])
         # the worker is meant to outlive its launcher, which Python flags as a ResourceWarning
         guard = warnings.catch_warnings()
@@ -74,19 +76,20 @@ class BackgroundTests(unittest.TestCase):
     def test_worker_reports_progress_then_ready_and_cleans_up(self):
         read_end, write_end = os.pipe()
         with mock.patch.object(tun, "Capture", FakeCapture):
-            self.assertEqual(tun.run_worker({}, write_end), 0)
+            self.assertEqual(tun.run_worker({}, report_fd=write_end), 0)
         with os.fdopen(read_end) as f:
             self.assertEqual(f.read(), "ok\tvirtual network interface created\nready\t\n")
         self.assertTrue(FakeCapture.torn_down)
 
     def _start_with_worker(self, script: str):
         reports = []
-        fake_cmd = lambda *args: [sys.executable, "-c", script, *args]  # noqa: E731
+        fake_cmd = lambda *args, **kw: [sys.executable, "-c", script, *args]  # noqa: E731
         with mock.patch.object(tun, "preflight", return_value=None), \
                 mock.patch.object(tun, "self_command", fake_cmd):
             code = tun.start_background({}, lambda kind, msg: reports.append((kind, msg)))
         return code, reports
 
+    @unittest.skipIf(sys.platform == "win32", "the pipe relay is the macOS path")
     def test_background_relays_progress_until_ready(self):
         script = ("import os, sys; fd = int(sys.argv[sys.argv.index('--report-fd') + 1]); "
                   "os.write(fd, b'ok\\tstep one\\nready\\t\\n')")
@@ -94,6 +97,7 @@ class BackgroundTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(reports, [("ok", "step one")])
 
+    @unittest.skipIf(sys.platform == "win32", "the pipe relay is the macOS path")
     def test_background_reports_failure_when_worker_dies(self):
         script = ("import os, sys; fd = int(sys.argv[sys.argv.index('--report-fd') + 1]); "
                   "os.write(fd, b'fail\\tboom\\n'); sys.exit(1)")
@@ -121,12 +125,14 @@ class Tun2socksCommandTests(unittest.TestCase):
         cfg = {"upstream": {"type": "http", "host": "10.9.9.9", "port": 3128, "username": ""},
                "listen": {"host": "127.0.0.1", "port": 8899}, "rules": [], "default_action": "proxy"}
         out = io.StringIO()
-        with mock.patch.object(tun, "primary_route", return_value=("en0", "10.0.0.1")), \
+        with mock.patch.object(tun.MacNet, "primary_route", return_value=("en0", "10.0.0.1")), \
+                mock.patch.object(tun.MacNet, "ifindex", return_value=4), \
+                mock.patch.object(tun.MacNet, "dns_servers", return_value=[]), \
                 mock.patch.object(tun, "resolve_ipv4", return_value=["10.9.9.9"]), \
-                mock.patch.object(tun, "dns_servers", return_value=[]), \
                 mock.patch.object(tun, "find_tun2socks", return_value="/opt/tun2socks"), \
                 contextlib.redirect_stdout(out):
-            self.assertTrue(tun.Capture(cfg, lambda kind, msg: None, system_proxy=False, dry_run=True).setup())
+            capture = tun.Capture(cfg, lambda kind, msg: None, system_proxy=False, dry_run=True, net=tun.MacNet())
+            self.assertTrue(capture.setup())
         self.assertIn("/opt/tun2socks --device utun233 --proxy socks5://127.0.0.1:8899", out.getvalue())
 
 
