@@ -167,6 +167,13 @@ class MacNet:
                   for net in ("224.0.0.0/4", "169.254.0.0/16")]
         routes.append((["route", "-n", "add", "-host", "255.255.255.255", "-interface", iface],
                        ["route", "-n", "delete", "-host", "255.255.255.255"]))
+        # pogo pins its own sockets to the real interface (IP_BOUND_IF). Those lookups only use
+        # routes scoped to that interface, and the capture routes would leave them nowhere to
+        # go ("Network is unreachable"). A default route scoped to the real interface fixes that
+        # without affecting anything else.
+        via = [gateway] if gateway else ["-interface", iface]
+        routes.append((["route", "-n", "add", "-ifscope", iface, "default", *via],
+                       ["route", "-n", "delete", "-ifscope", iface, "default"]))
         return routes
 
     def capture_routes(self) -> list[tuple[list[str], list[str]]]:
@@ -187,7 +194,7 @@ class MacNet:
             found.append("capture routes")
         return found
 
-    _DELETE_ARG = re.compile(r"^(-host|-net|-interface|[0-9A-Fa-f.:/]+|[a-z]+[0-9]+)$")
+    _DELETE_ARG = re.compile(r"^(-host|-net|-interface|-ifscope|default|[0-9A-Fa-f.:/]+|[a-z]+[0-9]+)$")
 
     def valid_delete(self, cmd) -> bool:
         return (isinstance(cmd, list) and cmd[:3] == ["route", "-n", "delete"] and len(cmd) <= 6
