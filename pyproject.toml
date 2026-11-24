@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pogo-cli"
+version = "0.2.0"
+description = "Route every app on your Mac through your proxy, with one command. A command-line alternative to Proxifier."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+dependencies = []
+keywords = ["proxy", "macos", "proxifier", "socks5", "http-proxy", "tun2socks", "cli"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "Operating System :: MacOS",
+  "Programming Language :: Python :: 3",
+  "Topic :: Internet :: Proxy Servers",
+  "Topic :: System :: Networking",
+]
+
+[project.urls]
+Homepage = "https://github.com/kharshit801/pogo"
+Documentation = "https://github.com/kharshit801/pogo/tree/main/docs"
+Issues = "https://github.com/kharshit801/pogo/issues"
+Changelog = "https://github.com/kharshit801/pogo/blob/main/CHANGELOG.md"
+
+[project.scripts]
+pogo = "pogo.cli:main"
+
+[tool.setuptools]
+packages = ["pogo"]
