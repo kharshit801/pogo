@@ -6,7 +6,7 @@
   <text x="338.5" y="24" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#7D8590">pogo — zsh</text>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#C9D1D9" style="white-space:pre">
     <text x="22" y="70" xml:space="preserve"><tspan fill="#3FB950">$</tspan> <tspan fill="#FFFFFF">pogo</tspan></text>
-    <text x="22" y="90" xml:space="preserve"><tspan font-weight="700" fill="#FFFFFF">pogo</tspan> <tspan fill="#7D8590">0.2.0</tspan> · route every app on your Mac through your proxy</text>
+    <text x="22" y="90" xml:space="preserve"><tspan font-weight="700" fill="#FFFFFF">pogo</tspan> <tspan fill="#7D8590">0.3.0</tspan> · route every app on your Mac through your proxy</text>
     <text x="22" y="110" xml:space="preserve"></text>
     <text x="22" y="130" xml:space="preserve">  <tspan fill="#E3B341">○ not set up yet</tspan>  ·  start with: pogo import  (or: pogo setup)</text>
     <text x="22" y="150" xml:space="preserve"></text>
@@ -36,7 +36,7 @@
     <text x="22" y="630" xml:space="preserve">  <tspan fill="#39C5CF">run            </tspan>Run one command through the proxy:  pogo run -- git pull</text>
     <text x="22" y="650" xml:space="preserve">  <tspan fill="#39C5CF">env            </tspan>Use the proxy in this shell:  eval &quot;$(pogo env)&quot;</text>
     <text x="22" y="670" xml:space="preserve"></text>
-    <text x="22" y="690" xml:space="preserve"><tspan font-weight="700" fill="#FFFFFF">When something&#x27;s wrong</tspan></text>
+    <text x="22" y="690" xml:space="preserve"><tspan font-weight="700" fill="#FFFFFF">When something&#x27;s wrong</tspan></text>
     <text x="22" y="710" xml:space="preserve">  <tspan fill="#39C5CF">doctor         </tspan>Find problems and explain how to fix them</text>
     <text x="22" y="730" xml:space="preserve">  <tspan fill="#39C5CF">reset          </tspan>Emergency undo of every network change pogo made</text>
     <text x="22" y="750" xml:space="preserve"></text>
