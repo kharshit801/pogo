@@ -1,4 +1,6 @@
 """All-apps capture plumbing that can be tested without root or touching real routes."""
+import contextlib
+import io
 import os
 import signal
 import sys
@@ -99,6 +101,33 @@ class BackgroundTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertEqual(reports[0], ("fail", "boom"))
         self.assertIn("didn't start", reports[-1][1])
+
+
+PFLAG_HELP = """Usage of tun2socks:
+  -d, --device string              Use this device [driver://]name
+      --loglevel string            Log level [debug|info|warn|error|silent] (default "info")
+  -p, --proxy string               Use this proxy [protocol://]host[:port]
+"""
+
+
+class Tun2socksCommandTests(unittest.TestCase):
+    """tun2socks 2.7 switched to POSIX-style flags: `-loglevel` made it exit at once."""
+
+    def test_loglevel_uses_two_dashes(self):
+        with mock.patch.object(tun, "_out", return_value=PFLAG_HELP):
+            self.assertEqual(tun._loglevel_args("tun2socks"), ["--loglevel", "error"])
+
+    def test_capture_starts_tun2socks_with_two_dash_flags(self):
+        cfg = {"upstream": {"type": "http", "host": "10.9.9.9", "port": 3128, "username": ""},
+               "listen": {"host": "127.0.0.1", "port": 8899}, "rules": [], "default_action": "proxy"}
+        out = io.StringIO()
+        with mock.patch.object(tun, "primary_route", return_value=("en0", "10.0.0.1")), \
+                mock.patch.object(tun, "resolve_ipv4", return_value=["10.9.9.9"]), \
+                mock.patch.object(tun, "dns_servers", return_value=[]), \
+                mock.patch.object(tun, "find_tun2socks", return_value="/opt/tun2socks"), \
+                contextlib.redirect_stdout(out):
+            self.assertTrue(tun.Capture(cfg, lambda kind, msg: None, system_proxy=False, dry_run=True).setup())
+        self.assertIn("/opt/tun2socks --device utun233 --proxy socks5://127.0.0.1:8899", out.getvalue())
 
 
 if __name__ == "__main__":

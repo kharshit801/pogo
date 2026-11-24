@@ -100,11 +100,11 @@ def resolve_ipv4(host: str) -> list[str]:
 def _loglevel_args(binary: str) -> list[str]:
     """Quiet tun2socks down (it logs every dropped UDP flow otherwise), using a level name that
     this build lists in its own help text, e.g. "Log level [debug|info|warn|error|silent]"."""
-    m = re.search(r"log ?level.*?\[([a-z|]+)\]", _out([binary, "-h"]), re.I | re.S)
+    m = re.search(r"log ?level.*?\[([a-z|]+)\]", _out([binary, "--help"]), re.I | re.S)
     levels = m.group(1).lower().split("|") if m else []
     for level in ("error", "warning", "warn"):
         if level in levels:
-            return ["-loglevel", level]
+            return ["--loglevel", level]
     return []
 
 
@@ -240,7 +240,8 @@ class Capture:
         self._save_state()
 
         binary = find_tun2socks() or "tun2socks"
-        cmd = [binary, "-device", TUN_DEVICE, "-proxy", f"socks5://{self.listen}",
+        # Two dashes: tun2socks 2.7+ parses POSIX-style flags; older builds accept them too.
+        cmd = [binary, "--device", TUN_DEVICE, "--proxy", f"socks5://{self.listen}",
                *([] if self.dry else _loglevel_args(binary))]
         if self.dry:
             print("    $", " ".join(cmd))
