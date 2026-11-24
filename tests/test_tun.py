@@ -45,6 +45,11 @@ class ParsingTests(unittest.TestCase):
         for evil in (";rm -rf /", "$(id)", "--", "-flush", "a b"):
             self.assertFalse(net.valid_delete(["route", "-n", "delete", evil]), evil)
         self.assertFalse(net.valid_delete(["rm", "-rf", "/"]))
+        self.assertTrue(net.valid_delete(["route", "-n", "delete", "-ifscope", "en0", "default"]))
+
+    def test_pinned_sockets_get_a_scoped_default_route(self):
+        adds = [add for add, _ in tun.MacNet().extra_routes("en0", "192.168.1.1")]
+        self.assertIn(["route", "-n", "add", "-ifscope", "en0", "default", "192.168.1.1"], adds)
 
 
 class FakeCapture:
