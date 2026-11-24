@@ -27,18 +27,29 @@ There's nothing to `pip install`: pogo uses only the Python standard library (3.
 
 See [docs/architecture.md](docs/architecture.md#source-layout) for what each file does.
 
-## Testing all-apps mode by hand
+## Testing all-apps mode
 
-All-apps mode changes real routes, so CI can't test it. To try your changes:
+All-apps mode changes real routes. CI tests it for real in the
+[E2E workflow](.github/workflows/e2e.yml) on macOS and Windows runners (`tests/e2e/run_e2e.py`:
+a fake authenticating proxy, `pogo on`, a request with every proxy setting disabled, `pogo off`).
+To try your changes by hand:
 
 ```sh
-sudo pogo tun --dry-run   # print every route and command without running them
+sudo pogo tun --dry-run   # print every route and command without running them (Windows: pogo tun --dry-run)
 pogo on                   # the real thing
 pogo logs -f              # watch decisions
 pogo off                  # or, if anything is stuck: pogo reset
 ```
 
-Routes never survive a reboot, so a restart is always a clean slate.
+Routes never survive a restart, so a restart is always a clean slate.
+
+## Windows
+
+Windows-specific code lives in `pogo/system.py` (processes, UAC), `pogo/winnet.py` (IP Helper
+API), `pogo/winproxy.py` (WinINet proxy settings), `pogo/wincred.py` (Credential Manager) and the
+`WinNet` backend in `pogo/tun.py`. Pure logic (bypass lists, netsh commands, checksums, the
+progress relay) is unit-tested on every platform; `tests/test_windows.py` also has tests that run
+only on Windows, which CI runs on GitHub's Windows machines.
 
 ## Docs and screenshots
 

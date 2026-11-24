@@ -2,6 +2,7 @@
 
 > Generated from pogo's own help by `scripts/gen_commands_doc.py` (`make docs`).
 > Run `pogo` on its own for an overview, or `pogo help <command>` in your terminal.
+> Shown as on macOS. On Windows the help mentions the UAC prompt and PowerShell syntax instead.
 
 - **Everyday:** [`on`](#pogo-on) · [`off`](#pogo-off) · [`status`](#pogo-status) · [`logs`](#pogo-logs)
 - **Set up:** [`import`](#pogo-import) · [`setup`](#pogo-setup) · [`test`](#pogo-test)
@@ -23,7 +24,7 @@ By default it captures ALL apps, like Proxifier: a virtual network interface han
 every app's connections to pogo, which applies your rules and logs in to your proxy.
 That needs admin rights, so macOS asks for your login password.
 
-With --basic it only sets the macOS system proxy. No password needed, and it covers
+With --basic it only sets the macOS system proxy. No admin rights needed, and it covers
 browsers and most apps, but not apps that ignore proxy settings (Docker, IDE helpers,
 command-line tools).
 
@@ -120,7 +121,8 @@ examples:
 usage: pogo setup [-h] [--host HOST] [--port PORT] [--type TYPE] [--user USER] [--password-stdin]
 
 Enter your proxy's address, port, username and password, step by step.
-Press Enter to keep a value. The password goes into the macOS Keychain, never into a file.
+Press Enter to keep a value. The password goes into the macOS Keychain,
+never into a file.
 If Proxifier is installed, setup offers to copy its settings instead.
 
 options:
@@ -295,13 +297,15 @@ examples:
 ### `pogo env`
 
 ```text
-usage: pogo env [-h] [--unset]
+usage: pogo env [-h] [--unset] [--shell {cmd,powershell,sh}]
 
 Print proxy environment variables so terminal tools in this shell use pogo.
 
 options:
-  -h, --help  show this help message and exit
-  --unset     print commands that remove the variables
+  -h, --help            show this help message and exit
+  --unset               print commands that remove the variables
+  --shell {cmd,powershell,sh}
+                        syntax to print (default: powershell on Windows, sh elsewhere)
 
 examples:
   eval "$(pogo env)"          use the proxy in this shell
@@ -331,7 +335,7 @@ examples:
 usage: pogo reset [-h]
 
 Emergency undo: stop pogo and remove every network change it made (routes, virtual
-interface, system proxy), even after a crash. May ask for your Mac password.
+interface, system proxy), even after a crash. May ask for admin rights.
 
 options:
   -h, --help  show this help message and exit
@@ -398,8 +402,8 @@ examples:
 ```text
 usage: pogo tun [-h] [--dry-run] [{start,cleanup}]
 
-Run the all-apps capture in this terminal until Ctrl-C (needs sudo). 'pogo on' runs it
-in the background for you; this is for debugging.
+Run the all-apps capture in this terminal until Ctrl-C (needs admin rights). 'pogo on'
+runs it in the background for you; this is for debugging.
 
 positional arguments:
   {start,cleanup}
@@ -419,8 +423,9 @@ examples:
 ```text
 usage: pogo helper [-h] [--reinstall]
 
-Install tun2socks, the open-source helper all-apps mode uses. It's built from source with
-Go and downloaded through your proxy when pogo is running.
+Install the open-source helper all-apps mode uses: tun2socks, plus the Wintun driver DLL
+on Windows. Official builds, checked against known checksums, downloaded through your
+proxy when pogo is running.
 
 options:
   -h, --help   show this help message and exit
