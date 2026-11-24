@@ -10,23 +10,24 @@ import asyncio
 import collections
 import difflib
 import getpass
+import ipaddress
 import logging
 import os
 import re
 import shutil
-import signal
 import socket
 import subprocess
 import sys
 import time
-from pathlib import Path
 
-from . import __version__, config, proxifier_import, sysproxy, tun, ui
+from . import __version__, config, helper, proxifier_import, sysproxy, system, tun, ui
 from .launch import run_as_root, self_command
 from .rules import bypass_list, decide, is_ip_rule, normalize_pattern
 from .server import UpstreamError, open_via_upstream, serve
 
 # --- the overview screen (plain `pogo`) -----------------------------------------
+
+ENV_EXAMPLE = "pogo env | Invoke-Expression" if system.IS_WINDOWS else 'eval "$(pogo env)"'
 
 SECTIONS = [
     ("Everyday", [
@@ -48,7 +49,7 @@ SECTIONS = [
     ]),
     ("Terminal tools in basic mode (git, brew, pip, npm…)", [
         ("run", "Run one command through the proxy:  pogo run -- git pull"),
-        ("env", 'Use the proxy in this shell:  eval "$(pogo env)"'),
+        ("env", "Use the proxy in this shell:  " + ENV_EXAMPLE),
     ]),
     ("When something's wrong", [
         ("doctor", "Find problems and explain how to fix them"),
@@ -63,7 +64,7 @@ COMMANDS: set[str] = set()
 
 def print_home() -> None:
     cfg = config.load()
-    print(f"{ui.bold('pogo')} {ui.dim(__version__)} · route every app on your Mac through your proxy")
+    print(f"{ui.bold('pogo')} {ui.dim(__version__)} · route every app on your {system.MACHINE} through your proxy")
     print()
     print(f"  {status_line(cfg)}")
     if not config.is_configured(cfg):
@@ -112,7 +113,40 @@ def status_line(cfg: dict, state: dict | None = None) -> str:
 
 
 def proxifier_running() -> bool:
-    return subprocess.run(["pgrep", "-x", "Proxifier"], capture_output=True).returncode == 0
+    if system.IS_WINDOWS:
+        return "proxifier.exe" in system.process_names()
+    return system.run(["pgrep", "-x", "Proxifier"]).returncode == 0
+
+
+def _quit_proxifier(assume_yes: bool) -> bool:
+    """Proxifier grabs connections before pogo sees them. Returns False to abort."""
+    ui.warn("Proxifier is running. It grabs traffic before pogo can, so don't run both.")
+    if system.IS_WINDOWS:
+        # Don't force-kill it: that could leave its network driver redirecting to a dead app.
+        ui.hint("quit it from its icon next to the clock: right-click it, then Exit")
+        for _ in range(3):
+            if not ui.interactive():
+                return False
+            try:
+                input("  press Enter once Proxifier is closed... ")
+            except EOFError:
+                return False
+            if not proxifier_running():
+                ui.ok("Proxifier closed")
+                return True
+            ui.warn("Proxifier is still running")
+        return False
+    if ui.confirm("Quit Proxifier now?", default=True, assume_yes=assume_yes):
+        system.run(["osascript", "-e", 'quit app "Proxifier"'])
+        for _ in range(50):
+            if not proxifier_running():
+                ui.ok("Proxifier quit")
+                return True
+            time.sleep(0.1)
+        ui.fail("Proxifier didn't quit. Quit it from its menu-bar icon, then run pogo on again.")
+        return False
+    ui.hint("continuing anyway; Proxifier will keep handling the traffic it captures")
+    return True
 
 
 def check_proxy(cfg: dict, host: str = "example.com", port: int = 443,
@@ -183,9 +217,9 @@ def _ensure_daemon(cfg: dict) -> bool:
         return False
     config.HOME_DIR.mkdir(parents=True, exist_ok=True)
     _rotate(config.LOG_FILE)
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}  # UTF-8 log on Windows too
     with open(config.LOG_FILE, "ab") as log_file:
-        child = subprocess.Popen(self_command("start"), stdout=log_file, stderr=log_file,
-                                 stdin=subprocess.DEVNULL, start_new_session=True)
+        child = system.spawn_background(self_command("start"), log_file, env=env)
     for _ in range(50):
         if child.poll() is not None:
             break
@@ -203,16 +237,16 @@ def _stop_daemon(timeout: float = 5.0) -> None:
     pid = config.running_pid()
     if not pid:
         return
+    system.terminate(pid)  # SIGTERM on macOS (it cleans up), TerminateProcess on Windows
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline and system.pid_alive(pid):
+        time.sleep(0.1)
+    if system.pid_alive(pid):
+        system.kill(pid)
     try:
-        os.kill(pid, signal.SIGTERM)
-        deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline and config.pid_alive(pid):
-            time.sleep(0.1)
-        if config.pid_alive(pid):
-            os.kill(pid, signal.SIGKILL)
-    except ProcessLookupError:
+        system.remove_file(config.PID_FILE)
+    except OSError:
         pass
-    config.PID_FILE.unlink(missing_ok=True)
 
 
 def _stop_capture(timeout: float = 10.0) -> bool:
@@ -257,18 +291,8 @@ def cmd_on(args) -> int:
         return 0
 
     print(ui.bold("Turning pogo on") + ui.dim("  (basic)" if args.basic else "  (all apps)"))
-    if proxifier_running():
-        ui.warn("Proxifier is running. It grabs traffic before pogo can, so don't run both.")
-        if ui.confirm("Quit Proxifier now?", default=True, assume_yes=args.yes):
-            subprocess.run(["osascript", "-e", 'quit app "Proxifier"'], capture_output=True)
-            for _ in range(50):
-                if not proxifier_running():
-                    break
-                time.sleep(0.1)
-            if proxifier_running():
-                ui.fail("Proxifier didn't quit. Quit it from its menu-bar icon, then run pogo on again.")
-                return 1
-            ui.ok("Proxifier quit")
+    if proxifier_running() and not _quit_proxifier(args.yes):
+        return 1
 
     ok, message, _ = check_proxy(cfg)
     if ok:
@@ -282,9 +306,13 @@ def cmd_on(args) -> int:
         return 1
 
     if not args.basic:
-        if tun.find_tun2socks() or _install_helper(cfg, ask=not args.yes):
-            ui.info("capturing all apps needs admin rights, so macOS asks for your login password")
-            if run_as_root("tun", "--background") == 0:
+        if not tun.missing_helpers() or _install_helper(cfg, ask=not args.yes):
+            if system.IS_WINDOWS:
+                started = tun.start_elevated(cfg, _report) == 0
+            else:
+                ui.info("capturing all apps needs admin rights, so macOS asks for your login password")
+                started = run_as_root("tun", "--background", home=str(config.HOME_DIR)) == 0
+            if started:
                 _say_on(cfg, all_apps=True)
                 return 0
             if not ui.confirm("All-apps capture didn't start. Use basic mode instead?", default=True,
@@ -298,7 +326,8 @@ def cmd_on(args) -> int:
     for err in errors:
         ui.fail(f"system proxy: {err}")
     if errors:
-        ui.hint("if it mentions admin rights, run: sudo pogo system on")
+        if not system.IS_WINDOWS:
+            ui.hint("if it mentions admin rights, run: sudo pogo system on")
         return 1
     ui.ok("system proxy set (" + ", ".join(sysproxy.services()) + ")")
     _say_on(cfg, all_apps=False)
@@ -352,7 +381,7 @@ def cmd_off(args) -> int:
         ui.ok("local proxy stopped")
     if rc == 0:
         print()
-        print(f"{ui.dim('○')} pogo is OFF · your Mac is back to normal networking")
+        print(f"{ui.dim('○')} pogo is OFF · your {system.MACHINE} is back to normal networking")
     return rc
 
 
@@ -370,7 +399,8 @@ def cmd_status(args) -> int:
         ("proxy", f"{up['type']}://{up['host']}:{up['port']}"
                   + (f"  ·  user {up['username']}" if up["username"] else "  ·  no login")),
         ("local proxy", f"running on {addr} (pid {state['pid']})" if state["pid"] else "stopped"),
-        ("all apps", f"captured through {tunnel.get('device')} · real network {tunnel.get('interface')}"
+        ("all apps", f"captured through {tunnel.get('device')} · real network "
+                     f"{tunnel.get('label') or tunnel.get('interface')}"
                      if tunnel else "not captured"),
         ("system proxy", ", ".join(services) if services else
          (f"points at another proxy ({state['system_other']})" if state["system_other"] else "off")),
@@ -403,7 +433,7 @@ def cmd_logs(args) -> int:
     if not path.exists():
         print("No connections logged yet. Turn pogo on (pogo on), then look again.")
         return 0
-    f = open(path, errors="replace")
+    f = open(path, encoding="utf-8", errors="replace")
     try:
         for line in collections.deque(f, maxlen=args.lines):
             print(_colorize(line.rstrip("\n")))
@@ -420,7 +450,7 @@ def cmd_logs(args) -> int:
             try:
                 if os.stat(path).st_ino != os.fstat(f.fileno()).st_ino:  # log was rotated
                     f.close()
-                    f = open(path, errors="replace")
+                    f = open(path, encoding="utf-8", errors="replace")
             except FileNotFoundError:
                 pass
     except KeyboardInterrupt:
@@ -491,7 +521,7 @@ def cmd_setup(args) -> int:
         config.set_password(up, password)
     config.save(cfg)
     print()
-    ui.ok(f"saved: {kind}://{host}:{port}" + (f" as {user} (password in the macOS Keychain)" if user else ""))
+    ui.ok(f"saved: {kind}://{host}:{port}" + (f" as {user} (password in the {system.PASSWORD_STORE})" if user else ""))
     if interactive:
         ok, msg, code = check_proxy(cfg)
         (ui.ok if ok else ui.fail)(msg)
@@ -514,7 +544,7 @@ def cmd_import(args) -> int:
             return 1
         print(ui.bold("Proxifier profiles"))
         for p in profiles:
-            print(f"  {p.name}" + (ui.green("   ← active in Proxifier") if p.active else ""))
+            print(f"  {p.name}" + (ui.green(f"   ← {p.note}") if p.note else ""))
         print(ui.dim("\n  import one with: pogo import <name>"))
         return 0
 
@@ -531,7 +561,7 @@ def cmd_import(args) -> int:
             ui.hint(note)
         return 1
 
-    print(ui.bold(f"Proxifier profile '{profile.name}'") + (ui.dim("  (active in Proxifier)") if profile.active else ""))
+    print(ui.bold(f"Proxifier profile '{profile.name}'") + (ui.dim(f"  ({profile.note})") if profile.note else ""))
     print(f"  {ui.dim('proxy'.ljust(10))}{up['host']}:{up['port']}  ·  {result.proxy_label.split()[0]} → {up['type']}"
           + (f"  ·  user {up['username']}" if up["username"] else "  ·  no login"))
     if result.rules:
@@ -573,7 +603,7 @@ def cmd_import(args) -> int:
                 if (old.get("username"), old.get("host"), old.get("port")) != \
                         (new["username"], new["host"], new["port"]):
                     config.delete_password(old)
-                ui.ok("password saved in the macOS Keychain")
+                ui.ok(f"password saved in the {system.PASSWORD_STORE}")
                 saved = pw
         if not saved:
             ui.warn("no password saved yet. Add it with: pogo setup")
@@ -695,13 +725,19 @@ def proxy_env(cfg: dict) -> dict[str, str]:
     return env
 
 
+SHELL_SYNTAX = {  # (set, unset) per shell
+    "sh": ("export {k}='{v}'", "unset {k}"),
+    "powershell": ("$env:{k} = '{v}'", "Remove-Item Env:{k} -ErrorAction SilentlyContinue"),
+    "cmd": ("set {k}={v}", "set {k}="),
+}
+
+
 def cmd_env(args) -> int:
     env = proxy_env(config.load())
-    if args.unset:
-        print("unset " + " ".join(env))
-    else:
-        for k, v in env.items():
-            print(f"export {k}='{v}'")
+    shell = args.shell or ("powershell" if system.IS_WINDOWS else "sh")
+    template = SHELL_SYNTAX[shell][1 if args.unset else 0]
+    for k, v in env.items():
+        print(template.format(k=k, v=v))
     return 0
 
 
@@ -713,8 +749,18 @@ def cmd_run(args) -> int:
     cfg = config.load()
     if not config.running_pid():
         ui.warn("the local proxy isn't running, so this will fail. Start it: pogo on")
+    env = {**os.environ, **proxy_env(cfg)}
+    if system.IS_WINDOWS:
+        executable = shutil.which(command[0])  # finds npm.cmd, git.exe ... through PATHEXT
+        if not executable:
+            ui.error(f"command not found: {command[0]}")
+            return 127
+        try:
+            return subprocess.run([executable, *command[1:]], env=env).returncode
+        except KeyboardInterrupt:
+            return 130
     try:
-        os.execvpe(command[0], command, {**os.environ, **proxy_env(cfg)})
+        os.execvpe(command[0], command, env)
     except FileNotFoundError:
         ui.error(f"command not found: {command[0]}")
         return 127
@@ -747,22 +793,30 @@ def cmd_doctor(args) -> int:
         ui.ok(f"proxy: {up['type']}://{up['host']}:{up['port']}" + (f" as {up['username']}" if up["username"] else ""))
         if up["username"]:
             if config.get_password(up):
-                ui.ok("password saved in the macOS Keychain")
+                ui.ok(f"password saved in the {system.PASSWORD_STORE}")
             else:
                 problem(f"no password saved for {up['username']}", "run: pogo setup")
 
     print("\n" + ui.bold("Network"))
-    iface, gateway = tun.primary_route()
-    if iface:
-        ui.ok(f"connected: {iface} via {gateway or 'direct link'}")
+    tunnel = config.read_tun_state()
+    if tunnel:
+        ui.ok(f"connected: {tunnel.get('label') or tunnel.get('interface')} via {tunnel.get('gateway') or 'direct link'}")
     else:
-        problem("no network connection", "connect to the campus Wi-Fi or Ethernet")
+        net = tun.default_net()
+        iface, gateway = net.primary_route()
+        if iface:
+            ui.ok(f"connected: {net.label(iface)} via {gateway or 'direct link'}")
+        else:
+            problem("no network connection", "connect to the campus Wi-Fi or Ethernet")
     try:
         socket.getaddrinfo("example.com", 443)
         ui.ok("DNS works (internet names resolve on this network)")
     except socket.gaierror:
         caution("this network can't look up internet names by itself",
                 "all-apps mode needs that; basic mode still works: pogo on --basic")
+    if _ipv6_internet():
+        caution("this network has IPv6, which all-apps mode doesn't capture",
+                "apps reaching a site over IPv6 skip pogo; campus networks rarely have it")
     if configured and up["username"] and not config.get_password(up):
         ui.info("proxy login not tested yet (no password saved)")
     elif configured:
@@ -801,14 +855,22 @@ def cmd_doctor(args) -> int:
         if left:
             problem("leftovers from a capture that didn't shut down cleanly: " + ", ".join(left),
                     "fix: pogo reset")
-    helper = tun.find_tun2socks()
-    if helper:
-        ui.ok(f"all-apps helper installed ({helper})")
+    missing = tun.missing_helpers()
+    if missing:
+        caution("all-apps helper isn't installed (" + ", ".join(missing) + ")",
+                "pogo on offers to install it, or run: pogo helper")
     else:
-        caution("all-apps helper (tun2socks) isn't installed", "pogo on offers to install it, or run: pogo helper")
+        ui.ok(f"all-apps helper installed ({tun.find_tun2socks()})")
+    if system.IS_WINDOWS:
+        from . import winproxy
+        if winproxy.policy_machine_wide():
+            caution("Group Policy makes proxy settings machine-wide on this PC",
+                    "basic mode can't change them; all-apps mode (pogo on) works without them")
+        if not system.is_admin():
+            ui.info("all-apps mode shows a Windows permission prompt (UAC) when it starts")
     if proxifier_running():
         caution("Proxifier is running; it grabs traffic before pogo can", "quit Proxifier before pogo on")
-    elif subprocess.run(["pgrep", "-i", "proxifier"], capture_output=True).returncode == 0:
+    elif not system.IS_WINDOWS and system.run(["pgrep", "-i", "proxifier"]).returncode == 0:
         ui.info("Proxifier's network extension is loaded (fine while the Proxifier app is closed)")
 
     print()
@@ -821,6 +883,17 @@ def cmd_doctor(args) -> int:
     else:
         print(ui.green("Everything looks good."))
     return 1 if p else 0
+
+
+def _ipv6_internet() -> bool:
+    """Does this computer have a route to the IPv6 internet? (UDP connect sends nothing.)"""
+    try:
+        with socket.socket(socket.AF_INET6, socket.SOCK_DGRAM) as probe:
+            probe.connect(("2001:4860:4860::8888", 53))
+            address = probe.getsockname()[0].split("%")[0]
+        return ipaddress.ip_address(address).is_global
+    except (OSError, ValueError):
+        return False
 
 
 def cmd_reset(args) -> int:
@@ -840,14 +913,19 @@ def cmd_reset(args) -> int:
     left = tun.leftovers()
     if left or config.read_tun_state():
         ui.info(f"found {', '.join(left) or 'a running capture'}; removing it needs admin rights")
-        if run_as_root("tun", "cleanup") != 0:
+        try:
+            code = run_as_root("tun", "cleanup", home=str(config.HOME_DIR))
+        except PermissionError:
+            ui.fail("admin permission was declined, so the leftovers are still there")
+            return 1
+        if code != 0:
             ui.fail("cleanup failed")
             return 1
     left = tun.leftovers()
     if left:
         ui.fail("still present: " + ", ".join(left))
         return 1
-    print(f"\n{ui.green('✔')} all clean · your Mac is back to normal networking")
+    print(f"\n{ui.green('✔')} all clean · your {system.MACHINE} is back to normal networking")
     return 0
 
 
@@ -866,7 +944,7 @@ def cmd_start(args) -> int:
     host, port = cfg["listen"]["host"], cfg["listen"]["port"]
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
     config.HOME_DIR.mkdir(parents=True, exist_ok=True)
-    config.PID_FILE.write_text(str(os.getpid()))
+    config.PID_FILE.write_text(str(os.getpid()), encoding="utf-8")
     if args.system:
         for err in sysproxy.enable(host, port, bypass_list(cfg)):
             logging.warning("system proxy: %s", err)
@@ -919,7 +997,8 @@ def cmd_system(args) -> int:
 def cmd_tun(args) -> int:
     cfg = config.load()
     if args.worker:
-        return tun.run_worker(cfg, args.report_fd)
+        return tun.run_worker(cfg, report_fd=args.report_fd, report_file=args.report_file,
+                              log_file=args.log_file)
     if args.background:
         return tun.start_background(cfg, _report)
     if args.action == "cleanup":
@@ -927,34 +1006,25 @@ def cmd_tun(args) -> int:
     return tun.run_foreground(cfg, _report, dry_run=args.dry_run)
 
 
-def _install_helper(cfg: dict, ask: bool) -> str | None:
-    ui.warn("all-apps mode needs a small open-source helper, tun2socks, which isn't installed yet")
-    go = shutil.which("go") or next((p for p in ("/usr/local/go/bin/go", "/opt/homebrew/bin/go")
-                                     if os.access(p, os.X_OK)), None)
-    if not go:
-        ui.hint("it's built with Go, which isn't installed. Install Go (brew install go), then: pogo helper")
-        return None
-    gobin = Path.home() / ".local" / "bin"
-    ui.hint(f"one-time download and build: go install {tun.TUN2SOCKS_MODULE}  (into {gobin})")
-    if ask and not ui.confirm("Install it now?", default=True):
-        return None
-    gobin.mkdir(parents=True, exist_ok=True)
-    env = {**os.environ, "GOBIN": str(gobin)}
-    if config.running_pid():
-        env.update(proxy_env(cfg))  # download through your proxy
-    result = subprocess.run([go, "install", tun.TUN2SOCKS_MODULE], env=env)
-    path = tun.find_tun2socks()
-    if result.returncode == 0 and path:
-        ui.ok(f"installed {path}")
-        return path
-    ui.fail("installing tun2socks failed (see the messages above)")
-    return None
+def _install_helper(cfg: dict, ask: bool) -> bool:
+    missing = tun.missing_helpers() or ["tun2socks"]
+    ui.warn("all-apps mode needs a small open-source helper (" + " and ".join(missing) + "), not installed yet")
+    ui.hint(helper.describe())
+    if ask and not ui.confirm("Download it now?", default=True):
+        return False
+    proxy = f"http://{config.listen_addr(cfg)}" if config.running_pid() else None  # through your proxy
+    try:
+        path = helper.install(proxy=proxy, report=_report)
+    except helper.HelperError as e:
+        ui.fail(str(e))
+        return False
+    ui.ok(f"installed into {path.parent}")
+    return True
 
 
 def cmd_helper(args) -> int:
-    path = tun.find_tun2socks()
-    if path and not args.reinstall:
-        ui.ok(f"tun2socks is installed: {path}")
+    if not tun.missing_helpers() and not args.reinstall:
+        ui.ok(f"already installed: {tun.find_tun2socks()}")
         return 0
     return 0 if _install_helper(config.load(), ask=False) else 1
 
@@ -990,12 +1060,15 @@ def build_parser() -> Parser:
     parser = Parser(prog="pogo", add_help=False)
     sub = parser.add_subparsers(dest="cmd", parser_class=Parser)
 
+    admin_prompt = "Windows shows a permission prompt (UAC)" if system.IS_WINDOWS else \
+        "macOS asks for your login password"
+    proxy_settings = "Windows proxy settings" if system.IS_WINDOWS else "macOS system proxy"
     p = _command(sub, "on", cmd_on, "turn pogo on",
                  "Turn pogo on.\n\n"
                  "By default it captures ALL apps, like Proxifier: a virtual network interface hands\n"
                  "every app's connections to pogo, which applies your rules and logs in to your proxy.\n"
-                 "That needs admin rights, so macOS asks for your login password.\n\n"
-                 "With --basic it only sets the macOS system proxy. No password needed, and it covers\n"
+                 f"That needs admin rights, so {admin_prompt}.\n\n"
+                 f"With --basic it only sets the {proxy_settings}. No admin rights needed, and it covers\n"
                  "browsers and most apps, but not apps that ignore proxy settings (Docker, IDE helpers,\n"
                  "command-line tools).",
                  ("pogo on             capture every app", "pogo on --basic     browsers and most apps, no admin password"))
@@ -1005,7 +1078,7 @@ def build_parser() -> Parser:
 
     _command(sub, "off", cmd_off, "turn pogo off",
              "Turn pogo off: removes the all-apps capture, switches the system proxy off and stops\n"
-             "the local proxy. Your Mac goes back to normal networking. No password needed.",
+             f"the local proxy. Your {system.MACHINE} goes back to normal networking. No password needed.",
              ("pogo off",))
 
     _command(sub, "status", cmd_status, "show what's running",
@@ -1022,7 +1095,8 @@ def build_parser() -> Parser:
 
     p = _command(sub, "setup", cmd_setup, "enter proxy details",
                  "Enter your proxy's address, port, username and password, step by step.\n"
-                 "Press Enter to keep a value. The password goes into the macOS Keychain, never into a file.\n"
+                 f"Press Enter to keep a value. The password goes into the {system.PASSWORD_STORE},\n"
+                 "never into a file.\n"
                  "If Proxifier is installed, setup offers to copy its settings instead.",
                  ("pogo setup", "pogo setup --host proxy.example.edu --port 3128 --user alice"))
     p.add_argument("--host", help="proxy IP or hostname")
@@ -1091,10 +1165,17 @@ def build_parser() -> Parser:
                  ("pogo run -- git pull", "pogo run -- brew update"))
     p.add_argument("command", nargs=argparse.REMAINDER, help="the command to run")
 
+    env_examples = (("pogo env | Invoke-Expression            PowerShell: use the proxy in this window",
+                     "pogo env --unset | Invoke-Expression    stop using it",
+                     "for /f \"delims=\" %i in ('pogo env --shell cmd') do %i    cmd.exe")
+                    if system.IS_WINDOWS else
+                    ('eval "$(pogo env)"          use the proxy in this shell', 'eval "$(pogo env --unset)"  stop using it'))
     p = _command(sub, "env", cmd_env, "proxy variables for your shell",
                  "Print proxy environment variables so terminal tools in this shell use pogo.",
-                 ('eval "$(pogo env)"          use the proxy in this shell', 'eval "$(pogo env --unset)"  stop using it'))
+                 env_examples)
     p.add_argument("--unset", action="store_true", help="print commands that remove the variables")
+    p.add_argument("--shell", choices=sorted(SHELL_SYNTAX),
+                   help="syntax to print (default: powershell on Windows, sh elsewhere)")
 
     _command(sub, "doctor", cmd_doctor, "diagnose problems",
              "Check everything that commonly goes wrong (settings, password, proxy reachability, DNS,\n"
@@ -1102,7 +1183,7 @@ def build_parser() -> Parser:
              ("pogo doctor",))
     _command(sub, "reset", cmd_reset, "emergency undo",
              "Emergency undo: stop pogo and remove every network change it made (routes, virtual\n"
-             "interface, system proxy), even after a crash. May ask for your Mac password.",
+             "interface, system proxy), even after a crash. May ask for admin rights.",
              ("pogo reset",))
 
     # advanced
@@ -1116,22 +1197,30 @@ def build_parser() -> Parser:
              "Stop the local proxy (and the all-apps capture with it). 'pogo off' does this and more.",
              ("pogo stop",))
     p = _command(sub, "system", cmd_system, "system proxy on/off",
-                 "Point the macOS system proxy at pogo, or switch that off. 'off' only removes\n"
+                 f"Point the {proxy_settings} at pogo, or switch that off. 'off' only removes\n"
                  "settings that point at pogo.",
                  ("pogo system on", "pogo system off"))
     p.add_argument("state", choices=["on", "off"])
+    tun_examples = (("pogo tun              (in an Administrator terminal)", "pogo tun --dry-run    show what it would do",
+                     "pogo tun cleanup      remove leftovers (Administrator)")
+                    if system.IS_WINDOWS else
+                    ("sudo pogo tun", "sudo pogo tun --dry-run    show what it would do",
+                     "sudo pogo tun cleanup     remove leftovers"))
     p = _command(sub, "tun", cmd_tun, "all-apps capture in the foreground",
-                 "Run the all-apps capture in this terminal until Ctrl-C (needs sudo). 'pogo on' runs it\n"
-                 "in the background for you; this is for debugging.",
-                 ("sudo pogo tun", "sudo pogo tun --dry-run    show what it would do", "sudo pogo tun cleanup     remove leftovers"))
+                 "Run the all-apps capture in this terminal until Ctrl-C (needs admin rights). 'pogo on'\n"
+                 "runs it in the background for you; this is for debugging.",
+                 tun_examples)
     p.add_argument("action", nargs="?", choices=["start", "cleanup"], default="start")
     p.add_argument("--dry-run", action="store_true", help="print the commands without running them")
     p.add_argument("--background", action="store_true", help=argparse.SUPPRESS)
     p.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     p.add_argument("--report-fd", type=int, default=-1, help=argparse.SUPPRESS)
+    p.add_argument("--report-file", help=argparse.SUPPRESS)
+    p.add_argument("--log-file", help=argparse.SUPPRESS)
     p = _command(sub, "helper", cmd_helper, "install the all-apps helper",
-                 "Install tun2socks, the open-source helper all-apps mode uses. It's built from source with\n"
-                 "Go and downloaded through your proxy when pogo is running.",
+                 "Install the open-source helper all-apps mode uses: tun2socks, plus the Wintun driver DLL\n"
+                 "on Windows. Official builds, checked against known checksums, downloaded through your\n"
+                 "proxy when pogo is running.",
                  ("pogo helper",))
     p.add_argument("--reinstall", action="store_true", help="install again even if it's present")
 
@@ -1177,6 +1266,7 @@ def _dispatch(argv: list[str]) -> int:
 
 
 def main(argv: list[str] | None = None) -> None:
+    ui.setup_console()
     try:
         code = _dispatch(sys.argv[1:] if argv is None else argv)
     except KeyboardInterrupt:

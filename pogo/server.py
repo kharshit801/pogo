@@ -8,9 +8,11 @@ import ipaddress
 import logging
 import signal
 import socket
+import struct
 import urllib.parse
 
-from .config import ConfigStore, tun_interface
+from . import system
+from .config import ConfigStore, tun_bind_index
 from .rules import decide, is_ip_rule
 
 log = logging.getLogger("pogo")
@@ -18,7 +20,8 @@ log = logging.getLogger("pogo")
 CONNECT_TIMEOUT = 15
 HEAD_TIMEOUT = 30
 SNIFF_FIRST, SNIFF_MORE = 0.3, 0.1   # seconds to wait for a client's first bytes
-IP_BOUND_IF, IPV6_BOUND_IF = 25, 125  # Darwin socket options: force egress interface
+IP_BOUND_IF, IPV6_BOUND_IF = 25, 125  # macOS socket options: force the outgoing interface
+IP_UNICAST_IF = IPV6_UNICAST_IF = 31   # the Windows equivalent
 HTTP_METHODS = (b"GET ", b"POST ", b"HEAD ", b"PUT ", b"DELETE ", b"OPTIONS ", b"PATCH ")
 HOP_HEADERS = {b"proxy-connection", b"proxy-authorization", b"connection", b"keep-alive"}
 
@@ -77,21 +80,29 @@ async def _reply(writer: asyncio.StreamWriter, code: int, reason: str, body: str
 
 # --- outbound connections ---------------------------------------------------
 
-async def _connect_bound(host: str, port: int, ifname: str):
-    """Connect pinned to a physical interface so we bypass the tunnel (tunnel mode)."""
+def _pin(sock: socket.socket, family: int, index: int) -> None:
+    """Make this socket leave through a specific network interface."""
+    if system.IS_WINDOWS:
+        if family == socket.AF_INET:  # IPv4 wants the index in network byte order
+            sock.setsockopt(socket.IPPROTO_IP, IP_UNICAST_IF, struct.pack("!I", index))
+        elif family == socket.AF_INET6:  # IPv6 wants it in host byte order
+            sock.setsockopt(socket.IPPROTO_IPV6, IPV6_UNICAST_IF, struct.pack("=I", index))
+    elif family == socket.AF_INET:
+        sock.setsockopt(socket.IPPROTO_IP, IP_BOUND_IF, index)
+    elif family == socket.AF_INET6:
+        sock.setsockopt(socket.IPPROTO_IPV6, IPV6_BOUND_IF, index)
+
+
+async def _connect_bound(host: str, port: int, index: int):
+    """Connect pinned to a physical interface so we bypass the tunnel (all-apps mode)."""
     loop = asyncio.get_running_loop()
-    index = socket.if_nametoindex(ifname)
     last: Exception = OSError(f"cannot resolve {host}")
     for family, type_, proto, _, addr in await loop.getaddrinfo(host, port, type=socket.SOCK_STREAM):
         sock = socket.socket(family, type_, proto)
         try:
             sock.setblocking(False)
-            if ipaddress.ip_address(addr[0].split("%")[0]).is_loopback:
-                pass  # localhost never enters the tunnel; pinning it to the NIC would break it
-            elif family == socket.AF_INET:
-                sock.setsockopt(socket.IPPROTO_IP, IP_BOUND_IF, index)
-            elif family == socket.AF_INET6:
-                sock.setsockopt(socket.IPPROTO_IPV6, IPV6_BOUND_IF, index)
+            if not ipaddress.ip_address(addr[0].split("%")[0]).is_loopback:
+                _pin(sock, family, index)  # localhost never enters the tunnel; pinning would break it
             await loop.sock_connect(sock, addr)
             return await asyncio.open_connection(sock=sock)
         except OSError as e:
@@ -101,9 +112,9 @@ async def _connect_bound(host: str, port: int, ifname: str):
 
 
 async def _connect_tcp(host: str, port: int):
-    ifname = tun_interface()
-    if ifname:
-        return await asyncio.wait_for(_connect_bound(host, port, ifname), CONNECT_TIMEOUT)
+    index = tun_bind_index()
+    if index:
+        return await asyncio.wait_for(_connect_bound(host, port, index), CONNECT_TIMEOUT)
     return await asyncio.wait_for(asyncio.open_connection(host, port), CONNECT_TIMEOUT)
 
 

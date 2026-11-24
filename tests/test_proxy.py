@@ -278,26 +278,28 @@ class SniffTests(unittest.TestCase):
         self.assertEqual(out, b"")
         self.assertEqual(e.upstream_seen, [])
 
-    @unittest.skipUnless(hasattr(socket, "if_nametoindex") and sys.platform == "darwin", "macOS only")
-    def test_outbound_sockets_pinned_to_interface(self):
+    @unittest.skipUnless(sys.platform == "darwin", "macOS interface names")
+    def test_outbound_sockets_pinned_while_capture_runs(self):
+        lo0 = socket.if_nametoindex("lo0")
+
         async def go():
             e = Env(); await e.start()
             used = []
             orig = server._connect_bound
 
-            async def spy(host, port, ifname):
-                used.append(ifname)
-                return await orig(host, port, ifname)
-            server._connect_bound, server.tun_interface = spy, (lambda: "lo0")
+            async def spy(host, port, index):
+                used.append(index)
+                return await orig(host, port, index)
+            server._connect_bound, server.tun_bind_index = spy, (lambda: lo0)
             try:
-                out = await e.tunnel(f"127.0.0.1:{e.tport}")   # direct rule -> must use bound connect
+                out = await e.tunnel(f"127.0.0.1:{e.tport}")   # direct rule -> goes through the pinning path
             finally:
-                server._connect_bound, server.tun_interface = orig, (lambda: None)
+                server._connect_bound, server.tun_bind_index = orig, (lambda: None)
             await e.close()
             return used, out
         used, out = run(go())
-        self.assertEqual(used, ["lo0"])
-        self.assertTrue(out.endswith(b"ok"))
+        self.assertEqual(used, [lo0])
+        self.assertTrue(out.endswith(b"ok"))  # localhost itself is never pinned, so it still connects
 
 
 class RuleTests(unittest.TestCase):

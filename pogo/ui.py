@@ -5,7 +5,34 @@ from __future__ import annotations
 import os
 import sys
 
-COLOR = sys.stdout.isatty() and "NO_COLOR" not in os.environ and os.environ.get("TERM") != "dumb"
+
+def _windows_vt() -> bool:
+    """Windows 10+ consoles draw ANSI colors once asked to."""
+    try:
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        kernel32.GetStdHandle.restype = ctypes.c_void_p
+        handle = ctypes.c_void_p(kernel32.GetStdHandle(-11))  # STD_OUTPUT_HANDLE
+        mode = ctypes.c_uint32()
+        if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+            return False
+        if mode.value & 0x0004:  # ENABLE_VIRTUAL_TERMINAL_PROCESSING
+            return True
+        return bool(kernel32.SetConsoleMode(handle, mode.value | 0x0004))
+    except (AttributeError, OSError):
+        return False
+
+
+def _color_enabled() -> bool:
+    out = sys.stdout
+    if out is None or not hasattr(out, "isatty") or not out.isatty():
+        return False
+    if "NO_COLOR" in os.environ or os.environ.get("TERM") == "dumb":
+        return False
+    return sys.platform != "win32" or _windows_vt()
+
+
+COLOR = _color_enabled()
 
 
 def _style(code: str):
@@ -17,6 +44,37 @@ def _style(code: str):
 bold, dim, red, green, yellow, cyan = (_style(c) for c in ("1", "2", "31", "32", "33", "36"))
 
 _ACTION_STYLE = {"proxy": cyan, "direct": green, "block": red}
+
+# The classic Windows console font can't draw these; Windows Terminal and VS Code can.
+_LEGACY_SYMBOLS = str.maketrans({"✔": "√", "✖": "×", "◐": "o", "●": "*", "○": "o", "↳": "->", "←": "<-"})
+
+
+class _LegacyConsole:
+    def __init__(self, stream):
+        self._stream = stream
+
+    def write(self, text: str) -> int:
+        return self._stream.write(text.translate(_LEGACY_SYMBOLS))
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
+
+def setup_console() -> None:
+    """Make output safe to print everywhere: no crash on symbols a console can't encode, and
+    look-alike symbols on the classic Windows console."""
+    for name in ("stdout", "stderr"):
+        stream = getattr(sys, name)
+        if stream is None:  # pythonw.exe (the Windows admin helper) has no console at all
+            setattr(sys, name, open(os.devnull, "w", encoding="utf-8"))
+            continue
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError, OSError):
+            pass
+        if (sys.platform == "win32" and stream.isatty()
+                and not (os.environ.get("WT_SESSION") or os.environ.get("TERM_PROGRAM"))):
+            setattr(sys, name, _LegacyConsole(stream))
 
 
 def action(name: str) -> str:
@@ -48,7 +106,7 @@ def error(msg: str) -> None:
 
 
 def interactive() -> bool:
-    return sys.stdin.isatty()
+    return sys.stdin is not None and sys.stdin.isatty()
 
 
 def ask(label: str, default: str = "") -> str:
