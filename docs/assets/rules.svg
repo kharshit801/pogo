@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="956" height="456" viewBox="0 0 956 456" role="img" aria-label="pogo — zsh">
+  <title>pogo — zsh</title>
+  <rect x="0.5" y="0.5" width="955" height="455" rx="12" fill="#0D1117" stroke="#30363D"/>
+  <path d="M1 38 H955" stroke="#30363D"/>
+  <circle cx="22" cy="19" r="6" fill="#FF5F57"/><circle cx="42" cy="19" r="6" fill="#FEBC2E"/><circle cx="62" cy="19" r="6" fill="#28C840"/>
+  <text x="478.0" y="24" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#7D8590">pogo — zsh</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#C9D1D9" style="white-space:pre">
+    <text x="22" y="70" xml:space="preserve"><tspan fill="#3FB950">$</tspan> <tspan fill="#FFFFFF">pogo rules add &quot;*.youtube.com&quot; block --at 1</tspan></text>
+    <text x="22" y="90" xml:space="preserve">  <tspan fill="#3FB950">✔</tspan> rule 1: *.youtube.com → <tspan fill="#FF7B72">block</tspan></text>
+    <text x="22" y="110" xml:space="preserve"></text>
+    <text x="22" y="130" xml:space="preserve"><tspan fill="#3FB950">$</tspan> <tspan fill="#FFFFFF">pogo rules check m.youtube.com</tspan></text>
+    <text x="22" y="150" xml:space="preserve">m.youtube.com → <tspan fill="#FF7B72">block</tspan>   (rule 1: *.youtube.com)</text>
+    <text x="22" y="170" xml:space="preserve"></text>
+    <text x="22" y="190" xml:space="preserve"><tspan fill="#3FB950">$</tspan> <tspan fill="#FFFFFF">pogo rules</tspan></text>
+    <text x="22" y="210" xml:space="preserve"><tspan font-weight="700" fill="#FFFFFF">Rules</tspan><tspan fill="#7D8590">  (checked top to bottom; the first match decides)</tspan></text>
+    <text x="22" y="230" xml:space="preserve">  <tspan fill="#7D8590">  1</tspan>  <tspan fill="#FF7B72">block</tspan>   *.youtube.com</text>
+    <text x="22" y="250" xml:space="preserve">  <tspan fill="#7D8590">  2</tspan>  <tspan fill="#3FB950">direct</tspan>  localhost</text>
+    <text x="22" y="270" xml:space="preserve">  <tspan fill="#7D8590">  3</tspan>  <tspan fill="#3FB950">direct</tspan>  *.local</text>
+    <text x="22" y="290" xml:space="preserve">  <tspan fill="#7D8590">  4</tspan>  <tspan fill="#3FB950">direct</tspan>  127.0.0.0/8</text>
+    <text x="22" y="310" xml:space="preserve">  <tspan fill="#7D8590">  5</tspan>  <tspan fill="#3FB950">direct</tspan>  10.0.0.0/8</text>
+    <text x="22" y="330" xml:space="preserve">  <tspan fill="#7D8590">  6</tspan>  <tspan fill="#3FB950">direct</tspan>  172.16.0.0/12</text>
+    <text x="22" y="350" xml:space="preserve">  <tspan fill="#7D8590">  7</tspan>  <tspan fill="#3FB950">direct</tspan>  192.168.0.0/16</text>
+    <text x="22" y="370" xml:space="preserve">  <tspan fill="#7D8590">  8</tspan>  <tspan fill="#3FB950">direct</tspan>  169.254.0.0/16</text>
+    <text x="22" y="390" xml:space="preserve">  <tspan fill="#7D8590">  *</tspan>  <tspan fill="#39C5CF">proxy</tspan>   <tspan fill="#7D8590">everything else (default)</tspan></text>
+    <text x="22" y="410" xml:space="preserve"></text>
+    <text x="22" y="430" xml:space="preserve">  add: pogo rules add &lt;site&gt; &lt;proxy|direct|block&gt;   ·   remove: pogo rules remove &lt;number&gt;</text>
+  </g>
+</svg>

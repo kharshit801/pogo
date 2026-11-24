@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-label="How pogo works: apps are caught by the macOS system proxy or a virtual network interface, pogo applies your rules, and each connection goes through your proxy, goes direct, or is blocked">
+  <title>How pogo works</title>
+  <defs>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B1020"/>
+      <stop offset="1" stop-color="#101731"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8B5CF6"/>
+      <stop offset="0.55" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+    <marker id="a-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#64748B"/></marker>
+    <marker id="a-brand" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#818CF8"/></marker>
+    <marker id="a-violet" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#A78BFA"/></marker>
+    <marker id="a-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#4ADE80"/></marker>
+    <marker id="a-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#F87171"/></marker>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="1199" height="559" rx="24" fill="url(#card)" stroke="#1F2A44"/>
+
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <!-- column headings -->
+    <g font-size="12" font-weight="700" fill="#64748B" letter-spacing="1.6">
+      <text x="40" y="60">YOUR APPS</text>
+      <text x="340" y="60">HOW THEY'RE CAUGHT</text>
+      <text x="625" y="60">POGO</text>
+      <text x="960" y="60">WHERE THEY GO</text>
+    </g>
+
+    <!-- apps -->
+    <g font-size="15" fill="#E2E8F0">
+      <rect x="40" y="96" width="230" height="46" rx="12" fill="#151C33" stroke="#2A3358"/>
+      <circle cx="60" cy="119" r="5" fill="#38BDF8"/><text x="76" y="124">Chrome · Safari · Arc</text>
+      <rect x="40" y="154" width="230" height="46" rx="12" fill="#151C33" stroke="#2A3358"/>
+      <circle cx="60" cy="177" r="5" fill="#38BDF8"/><text x="76" y="182">Slack · Zoom · Spotify</text>
+      <rect x="40" y="212" width="230" height="46" rx="12" fill="#151C33" stroke="#2A3358"/>
+      <circle cx="60" cy="235" r="5" fill="#F472B6"/><text x="76" y="240">Docker</text>
+      <rect x="40" y="270" width="230" height="46" rx="12" fill="#151C33" stroke="#2A3358"/>
+      <circle cx="60" cy="293" r="5" fill="#F472B6"/><text x="76" y="298">git · brew · npm · pip</text>
+      <rect x="40" y="328" width="230" height="46" rx="12" fill="#151C33" stroke="#2A3358"/>
+      <circle cx="60" cy="351" r="5" fill="#F472B6"/><text x="76" y="356">Cursor · VS Code helpers</text>
+      <rect x="40" y="386" width="230" height="46" rx="12" fill="#151C33" stroke="#2A3358" stroke-dasharray="4 4"/>
+      <circle cx="60" cy="409" r="5" fill="#F472B6"/><text x="76" y="414" fill="#94A3B8">…and every other app</text>
+    </g>
+
+    <!-- apps -> how they're caught -->
+    <g fill="none" stroke="#64748B" stroke-width="2" stroke-opacity="0.75" marker-end="url(#a-gray)">
+      <path d="M270 119 C 305 119, 305 140, 338 140"/>
+      <path d="M270 177 C 305 177, 305 162, 338 162"/>
+      <path d="M270 235 C 305 235, 305 322, 338 322"/>
+      <path d="M270 293 C 305 293, 305 340, 338 340"/>
+      <path d="M270 351 C 305 351, 305 358, 338 358"/>
+      <path d="M270 409 C 305 409, 305 376, 338 376"/>
+    </g>
+
+    <!-- how they're caught -->
+    <rect x="340" y="104" width="230" height="96" rx="14" fill="#151C33" stroke="#38BDF8" stroke-opacity="0.7"/>
+    <text x="358" y="134" font-size="16" font-weight="700" fill="#F8FAFC">macOS system proxy</text>
+    <text x="358" y="158" font-size="13" fill="#94A3B8">apps that honor proxy settings</text>
+    <text x="358" y="178" font-size="13" fill="#94A3B8">send the site name directly</text>
+
+    <rect x="340" y="290" width="230" height="118" rx="14" fill="#151C33" stroke="#F472B6" stroke-opacity="0.7"/>
+    <text x="358" y="320" font-size="16" font-weight="700" fill="#F8FAFC">Virtual interface</text>
+    <text x="358" y="344" font-size="13" fill="#94A3B8">catches every other TCP</text>
+    <text x="358" y="364" font-size="13" fill="#94A3B8">connection, via tun2socks</text>
+    <text x="358" y="390" font-size="12" fill="#64748B" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">utun233 · 0/1 + 128/1</text>
+
+    <!-- caught -> pogo -->
+    <g fill="none" stroke="#818CF8" stroke-width="2.5" marker-end="url(#a-brand)">
+      <path d="M570 152 C 598 152, 598 230, 623 230"/>
+      <path d="M570 349 C 598 349, 598 320, 623 320"/>
+    </g>
+
+    <!-- pogo -->
+    <rect x="625" y="120" width="275" height="320" rx="20" fill="#121A33" stroke="url(#brand)" stroke-width="2.5"/>
+    <g transform="translate(645 140) scale(0.34)">
+      <rect width="128" height="128" rx="30" fill="url(#brand)"/>
+      <g transform="translate(-3 -2)">
+        <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-width="6.5">
+          <path d="M28 44 C 44 44, 46 70, 58 70" stroke-opacity="0.7"/>
+          <path d="M28 70 L 58 70" stroke-opacity="0.7"/>
+          <path d="M28 96 C 44 96, 46 70, 58 70" stroke-opacity="0.7"/>
+          <path d="M58 70 C 64 28, 92 24, 100 58" stroke-width="7.5"/>
+        </g>
+        <circle cx="28" cy="44" r="5" fill="#FFFFFF"/><circle cx="28" cy="70" r="5" fill="#FFFFFF"/><circle cx="28" cy="96" r="5" fill="#FFFFFF"/>
+        <circle cx="58" cy="70" r="9" fill="#FFFFFF"/>
+        <path d="M91 55 L101 64 L108 51" fill="none" stroke="#FFFFFF" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    </g>
+    <text x="700" y="172" font-size="26" font-weight="800" fill="#FFFFFF">pogo</text>
+    <g font-size="14" fill="#CBD5E1">
+      <text x="649" y="226"><tspan fill="#818CF8">●</tspan>  Rules: proxy · direct · block</text>
+      <text x="649" y="262"><tspan fill="#818CF8">●</tspan>  Site names from TLS SNI / Host</text>
+      <text x="649" y="298"><tspan fill="#818CF8">●</tspan>  Logs in · password in Keychain</text>
+      <text x="649" y="334"><tspan fill="#818CF8">●</tspan>  Never loops: own sockets pinned</text>
+      <text x="649" y="370"><tspan fill="#818CF8">●</tspan>  Watchdog undoes everything</text>
+      <text x="649" y="406" fill="#64748B" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12">127.0.0.1:8899 · HTTP + SOCKS5</text>
+    </g>
+
+    <!-- pogo -> outcomes -->
+    <g fill="none" stroke-width="2.5">
+      <path d="M900 200 C 930 200, 930 156, 958 156" stroke="#A78BFA" marker-end="url(#a-violet)"/>
+      <path d="M900 284 C 930 284, 930 284, 958 284" stroke="#4ADE80" marker-end="url(#a-green)"/>
+      <path d="M900 368 C 930 368, 930 404, 958 404" stroke="#F87171" marker-end="url(#a-red)"/>
+    </g>
+
+    <!-- outcomes -->
+    <rect x="960" y="108" width="210" height="96" rx="14" fill="#151C33" stroke="#A78BFA"/>
+    <text x="978" y="136" font-size="11" font-weight="700" fill="#A78BFA" letter-spacing="1.4">PROXY</text>
+    <text x="978" y="160" font-size="16" font-weight="700" fill="#F8FAFC">Your proxy → Internet</text>
+    <text x="978" y="184" font-size="13" fill="#94A3B8">HTTP CONNECT or SOCKS5</text>
+
+    <rect x="960" y="244" width="210" height="80" rx="14" fill="#151C33" stroke="#4ADE80"/>
+    <text x="978" y="272" font-size="11" font-weight="700" fill="#4ADE80" letter-spacing="1.4">DIRECT</text>
+    <text x="978" y="296" font-size="16" font-weight="700" fill="#F8FAFC">Straight out</text>
+    <text x="978" y="314" font-size="13" fill="#94A3B8">campus network, LAN</text>
+
+    <rect x="960" y="364" width="210" height="80" rx="14" fill="#151C33" stroke="#F87171"/>
+    <text x="978" y="392" font-size="11" font-weight="700" fill="#F87171" letter-spacing="1.4">BLOCK</text>
+    <text x="978" y="416" font-size="16" font-weight="700" fill="#F8FAFC">Refused</text>
+    <text x="978" y="434" font-size="13" fill="#94A3B8">whatever your rules say</text>
+
+    <!-- footer -->
+    <line x1="40" y1="480" x2="1160" y2="480" stroke="#1F2A44"/>
+    <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" style="white-space:pre">
+      <text xml:space="preserve" x="40" y="518"><tspan fill="#4ADE80">$</tspan><tspan fill="#F8FAFC"> pogo on</tspan><tspan fill="#64748B">    capture every app</tspan></text>
+      <text xml:space="preserve" x="440" y="518"><tspan fill="#4ADE80">$</tspan><tspan fill="#F8FAFC"> pogo logs -f</tspan><tspan fill="#64748B">    watch each decision</tspan></text>
+      <text xml:space="preserve" x="880" y="518"><tspan fill="#4ADE80">$</tspan><tspan fill="#F8FAFC"> pogo off</tspan><tspan fill="#64748B">    all undone</tspan></text>
+    </g>
+  </g>
+</svg>

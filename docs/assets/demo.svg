@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="677" height="816" viewBox="0 0 677 816" role="img" aria-label="pogo — zsh">
+  <title>pogo — zsh</title>
+  <rect x="0.5" y="0.5" width="676" height="815" rx="12" fill="#0D1117" stroke="#30363D"/>
+  <path d="M1 38 H676" stroke="#30363D"/>
+  <circle cx="22" cy="19" r="6" fill="#FF5F57"/><circle cx="42" cy="19" r="6" fill="#FEBC2E"/><circle cx="62" cy="19" r="6" fill="#28C840"/>
+  <text x="338.5" y="24" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#7D8590">pogo — zsh</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#C9D1D9" style="white-space:pre">
+    <text x="22" y="70" xml:space="preserve"><tspan fill="#3FB950">$</tspan> <tspan fill="#FFFFFF">pogo</tspan></text>
+    <text x="22" y="90" xml:space="preserve"><tspan font-weight="700" fill="#FFFFFF">pogo</tspan> <tspan fill="#7D8590">0.2.0</tspan> · route every app on your Mac through your proxy</text>
+    <text x="22" y="110" xml:space="preserve"></text>
+    <text x="22" y="130" xml:space="preserve">  <tspan fill="#E3B341">○ not set up yet</tspan>  ·  start with: pogo import  (or: pogo setup)</text>
+    <text x="22" y="150" xml:space="preserve"></text>
+    <text x="22" y="170" xml:space="preserve"><tspan font-weight="700" fill="#FFFFFF">Get started</tspan></text>
+    <text x="22" y="190" xml:space="preserve">  1. <tspan fill="#39C5CF">pogo import</tspan>   copy your settings from Proxifier   (or <tspan fill="#39C5CF">pogo setup</tspan>)</text>
+    <text x="22" y="210" xml:space="preserve">  2. <tspan fill="#39C5CF">pogo test</tspan>     check the proxy and your password</text>
+    <text x="22" y="230" xml:space="preserve">  3. <tspan fill="#39C5CF">pogo on</tspan>       turn it on</text>
+    <text x="22" y="250" xml:space="preserve"></text>
+    <text x="22" y="270" xml:space="preserve"><tspan font-weight="700" fill="#FFFFFF">Everyday</tspan></text>
+    <text x="22" y="290" xml:space="preserve">  <tspan fill="#39C5CF">on             </tspan>Turn on: send every app&#x27;s traffic through your proxy</text>
+    <text x="22" y="310" xml:space="preserve">  <tspan fill="#39C5CF">off            </tspan>Turn off and put your network back to normal</text>
+    <text x="22" y="330" xml:space="preserve">  <tspan fill="#39C5CF">status         </tspan>Is it on? Which proxy? What is being captured?</text>
+    <text x="22" y="350" xml:space="preserve">  <tspan fill="#39C5CF">logs -f        </tspan>Watch connections live: where each one goes, and why</text>
+    <text x="22" y="370" xml:space="preserve"></text>
+    <text x="22" y="390" xml:space="preserve"><tspan font-weight="700" fill="#FFFFFF">Set up</tspan></text>
+    <text x="22" y="410" xml:space="preserve">  <tspan fill="#39C5CF">import         </tspan>Copy your proxy and rules from Proxifier</text>
+    <text x="22" y="430" xml:space="preserve">  <tspan fill="#39C5CF">setup          </tspan>Type in proxy address, port, username and password</text>
+    <text x="22" y="450" xml:space="preserve">  <tspan fill="#39C5CF">test           </tspan>Check the proxy is reachable and your password works</text>
+    <text x="22" y="470" xml:space="preserve"></text>
+    <text x="22" y="490" xml:space="preserve"><tspan font-weight="700" fill="#FFFFFF">Rules: what goes through the proxy, goes direct, or is blocked</tspan></text>
+    <text x="22" y="510" xml:space="preserve">  <tspan fill="#39C5CF">rules          </tspan>List the rules (checked top to bottom, first match wins)</text>
+    <text x="22" y="530" xml:space="preserve">  <tspan fill="#39C5CF">rules add      </tspan>Add one:  pogo rules add &quot;*.youtube.com&quot; block</text>
+    <text x="22" y="550" xml:space="preserve">  <tspan fill="#39C5CF">rules remove   </tspan>Remove one by its number</text>
+    <text x="22" y="570" xml:space="preserve">  <tspan fill="#39C5CF">rules check    </tspan>Which rule does a site hit?  pogo rules check github.com</text>
+    <text x="22" y="590" xml:space="preserve"></text>
+    <text x="22" y="610" xml:space="preserve"><tspan font-weight="700" fill="#FFFFFF">Terminal tools in basic mode (git, brew, pip, npm…)</tspan></text>
+    <text x="22" y="630" xml:space="preserve">  <tspan fill="#39C5CF">run            </tspan>Run one command through the proxy:  pogo run -- git pull</text>
+    <text x="22" y="650" xml:space="preserve">  <tspan fill="#39C5CF">env            </tspan>Use the proxy in this shell:  eval &quot;$(pogo env)&quot;</text>
+    <text x="22" y="670" xml:space="preserve"></text>
+    <text x="22" y="690" xml:space="preserve"><tspan font-weight="700" fill="#FFFFFF">When something&#x27;s wrong</tspan></text>
+    <text x="22" y="710" xml:space="preserve">  <tspan fill="#39C5CF">doctor         </tspan>Find problems and explain how to fix them</text>
+    <text x="22" y="730" xml:space="preserve">  <tspan fill="#39C5CF">reset          </tspan>Emergency undo of every network change pogo made</text>
+    <text x="22" y="750" xml:space="preserve"></text>
+    <text x="22" y="770" xml:space="preserve"><tspan fill="#7D8590">Advanced: start, stop, system, tun, helper</tspan></text>
+    <text x="22" y="790" xml:space="preserve">Details and examples: <tspan fill="#39C5CF">pogo help &lt;command&gt;</tspan>   e.g. pogo help on</text>
+  </g>
+</svg>
