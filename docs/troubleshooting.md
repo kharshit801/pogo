@@ -24,6 +24,18 @@ leftovers from earlier runs and a running Proxifier, and prints a fix next to ev
 | a terminal tool fails in basic mode | it ignores the system proxy | `pogo run -- <command>`, or `eval "$(pogo env)"`, or switch to all-apps mode |
 | "the network can't look up internet names" | your network only resolves names through the proxy | all-apps mode needs local DNS; use `pogo on --basic` |
 
+## Windows
+
+| Symptom | Fix |
+|---|---|
+| "pogo is not recognized" in a new window | close Windows Terminal completely and open it again (it caches PATH) |
+| the permission prompt was declined | run `pogo on` again and choose Yes, or use `pogo on --basic` |
+| tun2socks "disappeared right after it was saved" | your antivirus removed it: allow `%USERPROFILE%\.pogo\bin\tun2socks.exe`, then `pogo helper` |
+| "Group Policy makes proxy settings machine-wide" | basic mode can't work on this PC; use all-apps mode (`pogo on`) |
+| Ctrl-C asks "Terminate batch job (Y/N)?" | that's cmd.exe; answer Y |
+
+More in [windows.md](windows.md).
+
 ## Logs
 
 ```sh

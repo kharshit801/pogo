@@ -134,6 +134,12 @@ On top of that, host routes keep the proxy server and your DNS servers on the re
 your own subnet already has a more specific route than `0/1` and `128/1`, so local traffic is
 never captured.
 
+On macOS a pinned socket only uses routes *scoped* to its interface, so pogo also adds a default
+route scoped to the real interface (`route add -ifscope en0 default <gateway>`) while the capture
+runs; without it, pinned connections would fail with "Network is unreachable". On Windows the
+equivalent option, `IP_UNICAST_IF`, uses the adapter's own default route, so nothing extra is
+needed. How the Windows side works in detail: [windows.md](windows.md).
+
 ## The watchdog: how pogo cleans up
 
 The capture worker checks once a second whether it should stop, and always removes what it
@@ -158,10 +164,12 @@ recorded and removes them. Only well-formed `route delete` commands are accepted
 
 ## Processes and files
 
+Paths are shown for macOS; on Windows the folder is `%USERPROFILE%\.pogo`.
+
 | Path | Written by | Contents |
 |---|---|---|
 | `~/.config/pogo/config.json` | you, via the CLI | proxy address, port, username, rules |
-| macOS Keychain item `pogo` | you, via the CLI | your proxy password |
+| macOS Keychain item `pogo` / Credential Manager `pogo:…` | you, via the CLI | your proxy password |
 | `~/.config/pogo/pogo.pid` | local proxy | its process ID |
 | `~/.config/pogo/pogo.log` | local proxy | one line per connection (`pogo logs`) |
 | `~/.config/pogo/tun.json` | capture worker | interface, gateway, routes it added |
@@ -182,5 +190,10 @@ plus an atomic rename, or `O_NOFOLLOW`, so a planted symlink can't redirect a ro
 | `pogo/sysproxy.py` | macOS system proxy via `networksetup` and `scutil` |
 | `pogo/config.py` | config file, runtime state, Keychain |
 | `pogo/proxifier_import.py` | reads Proxifier `.ppx` profiles |
-| `pogo/launch.py` | relaunching pogo in the background or via sudo |
+| `pogo/launch.py` | relaunching pogo in the background, or with admin rights (sudo / UAC) |
+| `pogo/system.py` | processes, admin rights and files: what differs between macOS and Windows |
+| `pogo/helper.py` | downloads and verifies tun2socks (and Wintun on Windows) |
+| `pogo/winnet.py` | Windows routing table, adapters and DNS servers (IP Helper API) |
+| `pogo/winproxy.py` | Windows proxy settings (WinINet), backup and restart safety net |
+| `pogo/wincred.py` | Windows Credential Manager |
 | `pogo/ui.py` | colors, symbols, prompts |
