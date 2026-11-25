@@ -34,6 +34,9 @@ All notable changes to pogo are documented here. The format follows
 - After a crash or a restart, the process IDs pogo saved can belong to other programs. pogo could
   then mistake one for its own, and `pogo reset` (running as admin) could stop it. A saved process
   ID now only counts if that process started before pogo saved it.
+- Running the macOS installer again to update could fail with "Not possible to fast-forward" if
+  pogo's history had been rewritten since the install. It now fetches the latest version and
+  resets its own copy to it, and stops instead if you changed files in that copy.
 
 ## [0.2.0] - 2026-11-25
 

@@ -35,7 +35,12 @@ python3 -c 'import sys; sys.exit(sys.version_info < (3, 9))' || fail "pogo needs
 
 if [ -d "$DEST/.git" ]; then
   say "Updating pogo in $DEST"
-  git -C "$DEST" pull --ff-only --quiet
+  [ -z "$(git -C "$DEST" status --porcelain)" ] ||
+    fail "$DEST has files you changed. Move them somewhere else, then run this again."
+  # Fetch and reset instead of pull: this folder is the installer's own copy, and updating must
+  # work even if the project's history was rewritten since it was installed.
+  git -C "$DEST" fetch --quiet --depth 1 origin main
+  git -C "$DEST" reset --quiet --hard FETCH_HEAD
 else
   say "Installing pogo into $DEST"
   mkdir -p "$(dirname "$DEST")"
