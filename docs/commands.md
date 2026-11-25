@@ -2,14 +2,13 @@
 
 > Generated from pogo's own help by `scripts/gen_commands_doc.py` (`make docs`).
 > Run `pogo` on its own for an overview, or `pogo help <command>` in your terminal.
-> Shown as on macOS. On Windows the help mentions the UAC prompt and PowerShell syntax instead.
 
 - **Everyday:** [`on`](#pogo-on) · [`off`](#pogo-off) · [`status`](#pogo-status) · [`logs`](#pogo-logs)
 - **Set up:** [`import`](#pogo-import) · [`setup`](#pogo-setup) · [`test`](#pogo-test)
 - **Rules:** [`rules`](#pogo-rules) · [`rules add`](#pogo-rules-add) · [`rules remove`](#pogo-rules-remove) · [`rules check`](#pogo-rules-check) · [`rules default`](#pogo-rules-default)
 - **Terminal tools:** [`run`](#pogo-run) · [`env`](#pogo-env)
 - **When something's wrong:** [`doctor`](#pogo-doctor) · [`reset`](#pogo-reset)
-- **Advanced:** [`start`](#pogo-start) · [`stop`](#pogo-stop) · [`system`](#pogo-system) · [`tun`](#pogo-tun) · [`helper`](#pogo-helper)
+- **Advanced:** [`start`](#pogo-start) · [`stop`](#pogo-stop) · [`system`](#pogo-system) · [`tun`](#pogo-tun) · [`helper`](#pogo-helper) · [`uninstall`](#pogo-uninstall)
 
 ## Everyday
 
@@ -433,4 +432,25 @@ options:
 
 examples:
   pogo helper
+```
+
+### `pogo uninstall`
+
+```text
+usage: pogo uninstall [-h] [-y]
+
+Remove pogo from this computer. It turns pogo off and undoes its network changes first,
+then deletes its settings, logs, downloaded helpers, the password saved in Keychain
+and the program with its pogo command.
+
+It shows what it will remove and asks first. Nothing is removed if pogo can't turn off
+cleanly. A copy of pogo you run from a folder of your own (a git clone) is never deleted.
+
+options:
+  -h, --help  show this help message and exit
+  -y, --yes   don't ask for confirmation
+
+examples:
+  pogo uninstall
+  pogo uninstall --yes     don't ask first
 ```

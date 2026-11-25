@@ -12,7 +12,7 @@ from pathlib import Path
 from . import system
 
 
-def _user_home() -> Path:
+def user_home() -> Path:
     # `sudo pogo ...` on macOS must still use the invoking user's config, not root's.
     if not system.IS_WINDOWS:
         sudo_user = os.environ.get("SUDO_USER")
@@ -29,8 +29,8 @@ def _default_home() -> Path:
     if system.IS_WINDOWS:
         # Deliberately not under AppData: the Microsoft Store Python silently redirects AppData
         # writes to a private folder that tun2socks and the admin helper would never see.
-        return _user_home() / ".pogo"
-    return _user_home() / ".config" / "pogo"
+        return user_home() / ".pogo"
+    return user_home() / ".config" / "pogo"
 
 
 HOME_DIR = Path(os.environ.get("POGO_HOME") or _default_home())
@@ -185,14 +185,15 @@ def set_password(up: dict, password: str) -> None:
         raise RuntimeError(f"could not store password in Keychain: {r.stderr.strip()}")
 
 
-def delete_password(up: dict) -> None:
+def delete_password(up: dict) -> bool:
+    """Remove the saved password for this account. True if there was one."""
     if not (up.get("username") and up.get("host")):
-        return
+        return False
     if system.IS_WINDOWS:
         from . import wincred
-        wincred.delete(_account(up))
-        return
-    system.run(["security", "delete-generic-password", "-s", KEYCHAIN_SERVICE, "-a", _account(up)])
+        return wincred.delete(_account(up))
+    r = system.run(["security", "delete-generic-password", "-s", KEYCHAIN_SERVICE, "-a", _account(up)])
+    return r.returncode == 0
 
 
 class ConfigStore:

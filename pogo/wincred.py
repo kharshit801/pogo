@@ -67,5 +67,6 @@ def read(account: str) -> str:
         dll.CredFree(pointer)
 
 
-def delete(account: str) -> None:
-    _advapi32().CredDeleteW(target(account), CRED_TYPE_GENERIC, 0)
+def delete(account: str) -> bool:
+    """Remove the saved password. True if there was one."""
+    return bool(_advapi32().CredDeleteW(target(account), CRED_TYPE_GENERIC, 0))

@@ -20,7 +20,7 @@ import subprocess
 import sys
 import time
 
-from . import __version__, config, helper, logo, proxifier_import, sysproxy, system, tun, ui
+from . import __version__, config, helper, logo, proxifier_import, sysproxy, system, tun, ui, uninstall
 from .launch import run_as_root, self_command
 from .rules import bypass_list, decide, is_ip_rule, normalize_pattern
 from .server import UpstreamError, open_via_upstream, serve
@@ -56,7 +56,7 @@ SECTIONS = [
         ("reset", "Emergency undo of every network change pogo made"),
     ]),
 ]
-ADVANCED = "start, stop, system, tun, helper"
+ADVANCED = "start, stop, system, tun, helper, uninstall"
 
 PARSERS: dict[str, argparse.ArgumentParser] = {}   # "rules add" -> its parser, for `pogo help`
 COMMANDS: set[str] = set()
@@ -1014,6 +1014,66 @@ def cmd_tun(args) -> int:
     return tun.run_foreground(cfg, _report, dry_run=args.dry_run)
 
 
+INSTALL_COMMAND = ("irm https://raw.githubusercontent.com/kharshit801/pogo/main/install.ps1 | iex"
+                   if system.IS_WINDOWS else
+                   "curl -fsSL https://raw.githubusercontent.com/kharshit801/pogo/main/install.sh | bash")
+
+
+def cmd_uninstall(args) -> int:
+    if not system.IS_WINDOWS and os.geteuid() == 0:
+        ui.error("run pogo uninstall without sudo: it asks for your password itself if it needs it")
+        return 1
+    cfg = config.load()
+    up = cfg["upstream"]
+    plan = uninstall.plan(uninstall.locations())
+    print(ui.bold("Uninstall pogo"))
+    print("pogo turns itself off and undoes its network changes, then removes:")
+    for path, what in plan.delete:
+        print(f"  - {what}: {uninstall.show(path)}")
+    for folder in plan.tidy:
+        print(f"  - pogo's files in {uninstall.show(folder)}")
+    if up.get("username"):
+        print(f"  - the password saved for {up['username']}, if any ({system.PASSWORD_STORE})")
+    if system.IS_WINDOWS:
+        print("  - pogo's folder in your PATH")
+    for note in plan.keep:
+        ui.hint(note)
+    if not ui.confirm("Remove pogo from this computer?", default=False, assume_yes=args.yes):
+        print("Nothing changed.")
+        return 1
+    print()
+
+    # Network changes first. If they can't all be undone, keep everything needed to finish later.
+    state = capture_state(cfg)
+    if state["tunnel"] or state["pid"] or sysproxy.pointing_to(config.listen_addr(cfg)):
+        if cmd_off(args) != 0:
+            ui.fail("pogo didn't turn off cleanly, so nothing was removed")
+            ui.hint("run: pogo reset, then pogo uninstall")
+            return 1
+        print()
+    if [item for item in tun.leftovers() if item != "stale state file"]:  # that file goes with its folder
+        if cmd_reset(args) != 0:
+            ui.fail("pogo's network changes couldn't all be undone, so nothing was removed")
+            return 1
+        print()
+
+    if config.delete_password(up):
+        ui.ok(f"removed the saved password ({system.PASSWORD_STORE})")
+    if system.IS_WINDOWS:
+        from . import winproxy
+        winproxy._unregister_restore()  # only there if Windows restarted while basic mode was on
+        if uninstall.remove_path_entry():
+            ui.ok("removed pogo's folder from your PATH")
+    failed = uninstall.remove(plan, _report)
+    print()
+    if failed:
+        ui.warn("pogo is uninstalled, apart from what's listed above")
+        return 1
+    print(f"{ui.green('✔')} pogo is uninstalled")
+    print(ui.dim(f"  to install it again: {INSTALL_COMMAND}"))
+    return 0
+
+
 def _install_helper(cfg: dict, ask: bool) -> bool:
     missing = tun.missing_helpers() or ["tun2socks"]
     ui.warn("all-apps mode needs a small open-source helper (" + " and ".join(missing) + "), not installed yet")
@@ -1231,6 +1291,16 @@ def build_parser() -> Parser:
                  "proxy when pogo is running.",
                  ("pogo helper",))
     p.add_argument("--reinstall", action="store_true", help="install again even if it's present")
+    password_store = "Credential Manager" if system.IS_WINDOWS else "Keychain"
+    p = _command(sub, "uninstall", cmd_uninstall, "remove pogo from this computer",
+                 "Remove pogo from this computer. It turns pogo off and undoes its network changes first,\n"
+                 f"then deletes its settings, logs, downloaded helpers, the password saved in {password_store}\n"
+                 + ("and the program, and takes pogo out of your PATH.\n\n" if system.IS_WINDOWS else
+                    "and the program with its pogo command.\n\n")
+                 + "It shows what it will remove and asks first. Nothing is removed if pogo can't turn off\n"
+                   "cleanly. A copy of pogo you run from a folder of your own (a git clone) is never deleted.",
+                 ("pogo uninstall", "pogo uninstall --yes     don't ask first"))
+    p.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
 
     COMMANDS.clear()
     COMMANDS.update(k for k in PARSERS if " " not in k)
