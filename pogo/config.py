@@ -99,7 +99,7 @@ def pid_alive(pid: int) -> bool:
     return system.pid_alive(pid)
 
 
-def _is_pogo_process(pid: int) -> bool:
+def is_pogo_process(pid: int) -> bool:
     command = system.process_command(pid)
     if system.IS_WINDOWS:
         return "python" in Path(command).name.lower()  # the executable; the PID file says which one
@@ -107,12 +107,14 @@ def _is_pogo_process(pid: int) -> bool:
 
 
 def running_pid() -> int | None:
-    """PID of the local proxy, if it is running (guards against stale PID files)."""
+    """PID of the local proxy, if it is running. Guards against stale PID files: after a crash
+    or a restart, the same PID can belong to another program, which pogo must never stop."""
     try:
         pid = int(PID_FILE.read_text(encoding="utf-8").strip())
+        written = PID_FILE.stat().st_mtime  # the proxy writes it right after it starts
     except (OSError, ValueError):
         return None
-    return pid if pid_alive(pid) and _is_pogo_process(pid) else None
+    return pid if system.same_process(pid, written) and is_pogo_process(pid) else None
 
 
 def read_tun_state() -> dict | None:
@@ -130,7 +132,8 @@ def read_tun_state() -> dict | None:
             return None
     if not isinstance(data, dict) or not isinstance(data.get("pid"), int):
         return None
-    return data if pid_alive(data["pid"]) else None
+    # "started" is refreshed on every save, so the capture process always started before it
+    return data if system.same_process(data["pid"], data.get("started")) else None
 
 
 def tun_bind_index() -> int | None:

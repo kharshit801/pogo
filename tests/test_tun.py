@@ -1,10 +1,12 @@
 """All-apps capture plumbing that can be tested without root or touching real routes."""
 import contextlib
 import io
+import json
 import os
 import signal
 import sys
 import tempfile
+import time
 import unittest
 import warnings
 from unittest import mock
@@ -139,6 +141,77 @@ class Tun2socksCommandTests(unittest.TestCase):
             capture = tun.Capture(cfg, lambda kind, msg: None, system_proxy=False, dry_run=True, net=tun.MacNet())
             self.assertTrue(capture.setup())
         self.assertIn("/opt/tun2socks --device utun233 --proxy socks5://127.0.0.1:8899", out.getvalue())
+
+
+class ReusedPidTests(unittest.TestCase):
+    """After a crash or a restart, a PID pogo saved can belong to another program. pogo must treat
+    its record as stale, and must never stop that program (its cleanup runs as admin)."""
+
+    def setUp(self):
+        for f in (config.TUN_FILE, config.PID_FILE):
+            self.addCleanup(lambda f=f: f.unlink() if f.exists() else None)
+        config.HOME_DIR.mkdir(parents=True, exist_ok=True)
+        self.me = os.getpid()
+        self.my_start = tun.system.process_started(self.me)
+        self.assertIsNotNone(self.my_start)
+
+    def write_state(self, **state):
+        config.TUN_FILE.write_text(json.dumps({"pid": self.me, **state}), encoding="utf-8")
+
+    def test_state_written_before_the_process_started_is_stale(self):
+        self.write_state(started=int(self.my_start) - 60)  # this process took over the PID later
+        self.assertIsNone(config.read_tun_state())
+        with mock.patch.object(tun, "default_net", return_value=mock.Mock(leftovers=lambda: [])):
+            self.assertEqual(tun.leftovers(), ["stale state file"])
+
+    def test_state_of_a_running_capture_is_read(self):
+        self.write_state(started=int(time.time()))
+        self.assertEqual(config.read_tun_state()["pid"], self.me)
+        self.write_state()  # state written by an older pogo: no time to compare
+        self.assertEqual(config.read_tun_state()["pid"], self.me)
+
+    def test_cleanup_never_stops_a_program_that_reused_the_pid(self):
+        self.write_state(started=int(self.my_start) - 60, helper_pid=self.me)
+        net = mock.Mock()
+        with mock.patch.object(tun.system, "is_admin", return_value=True), \
+                mock.patch.object(tun.config, "is_pogo_process", return_value=True), \
+                mock.patch.object(tun, "default_net", return_value=net), \
+                mock.patch.object(tun.system, "kill") as kill:
+            began = time.monotonic()
+            self.assertEqual(tun.cleanup(lambda kind, msg: None), 0)
+        kill.assert_not_called()
+        self.assertLess(time.monotonic() - began, 2)  # didn't wait for "our" worker to exit
+        net.cleanup.assert_called_once()  # routes are still cleaned up
+        self.assertFalse(config.TUN_FILE.exists())
+
+    def test_cleanup_stops_its_own_worker(self):
+        self.write_state(started=int(time.time()))
+        with mock.patch.object(tun.system, "is_admin", return_value=True), \
+                mock.patch.object(tun.config, "is_pogo_process", return_value=True), \
+                mock.patch.object(tun, "default_net", return_value=mock.Mock()), \
+                mock.patch.object(tun.time, "sleep"), \
+                mock.patch.object(tun.system, "kill") as kill:
+            tun.cleanup(lambda kind, msg: None)
+        kill.assert_called_once_with(self.me)
+
+    def test_windows_cleanup_only_stops_its_own_tun2socks(self):
+        net = tun.WinNet()
+        with mock.patch.object(tun.WinNet, "_api", return_value=mock.Mock(routes=lambda: [])), \
+                mock.patch.object(tun.system, "process_command", return_value=r"C:\x\tun2socks.exe"), \
+                mock.patch.object(tun.system, "run"), \
+                mock.patch.object(tun.system, "kill") as kill:
+            net.cleanup({"helper_pid": self.me, "started": int(self.my_start) - 60})
+            kill.assert_not_called()
+            net.cleanup({"helper_pid": self.me, "started": int(time.time())})
+            kill.assert_called_once_with(self.me)
+
+    def test_stale_pid_file_is_ignored(self):
+        config.PID_FILE.write_text(str(self.me), encoding="utf-8")
+        with mock.patch.object(config, "is_pogo_process", return_value=True):
+            self.assertEqual(config.running_pid(), self.me)
+            old = self.my_start - 60
+            os.utime(config.PID_FILE, (old, old))  # the file predates this process
+            self.assertIsNone(config.running_pid())
 
 
 if __name__ == "__main__":
