@@ -54,6 +54,21 @@ jobs:
           $path = [Environment]::GetEnvironmentVariable('Path', 'User')
           if ($path -like '*\.pogo\bin*') { throw "the user PATH still has pogo in it: $path" }
           Write-Host "uninstalled cleanly"
+      - name: macOS installer (a fresh install, then an update after a history rewrite)
+        if: runner.os == 'macOS'
+        run: |
+          export POGO_INSTALL_DIR="$RUNNER_TEMP/installer/share/pogo" POGO_BIN_DIR="$RUNNER_TEMP/installer/bin"
+          bash install.sh
+          "$POGO_BIN_DIR/pogo" --version
+          # an installed copy whose history main no longer has, as after a rewrite of main
+          git -C "$POGO_INSTALL_DIR" checkout -q --orphan rewritten
+          git -C "$POGO_INSTALL_DIR" -c user.name=ci -c user.email=ci@example.com commit -q -m "old history"
+          git -C "$POGO_INSTALL_DIR" branch -q -D main
+          git -C "$POGO_INSTALL_DIR" branch -q -m main
+          bash install.sh
+          test "$(git -C "$POGO_INSTALL_DIR" rev-parse HEAD)" = \
+               "$(git ls-remote https://github.com/kharshit801/pogo.git refs/heads/main | cut -f1)"
+          "$POGO_BIN_DIR/pogo" --version
       - name: macOS uninstall (in the layout install.sh creates)
         if: runner.os == 'macOS'
         run: |
