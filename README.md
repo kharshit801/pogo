@@ -1,11 +1,9 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-white.png">
-  <img src="docs/assets/logo.png" width="115" alt="pogo logo" />
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-lockup-dark.svg">
+  <img src="docs/assets/logo-lockup.svg" width="176" alt="pogo" />
 </picture>
-
-# pogo
 
 **Route every app on your Mac or PC through your proxy, with one command.**
 
