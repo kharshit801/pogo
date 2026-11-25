@@ -103,7 +103,12 @@ proxy (see [two modes](#two-modes)).
 
 ## How it works
 
-<p align="center"><img src="docs/assets/how-it-works.svg" alt="Apps reach pogo through the system proxy or a virtual interface; pogo's rules send each connection through your proxy, direct, or block it" /></p>
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/how-it-works-dark.svg">
+  <img src="docs/assets/how-it-works.svg" alt="Apps reach pogo through the system proxy or a virtual interface; pogo's rules send each connection through your proxy, straight out, or block it" />
+</picture>
+</p>
 
 1. **Apps that honor proxy settings** (browsers, most apps) reach pogo through the system proxy and pass the site name along.
 2. **Everything else** (Docker, git, IDE helpers…) is caught by two routes that send all IPv4 traffic into a virtual interface: `utun233` on macOS, a Wintun adapter called `pogo` on Windows. [tun2socks](https://github.com/xjasonlyu/tun2socks) hands each connection to pogo.
