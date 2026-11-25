@@ -18,7 +18,7 @@ where the only way to the internet is an authenticated proxy.
   <img alt="macOS and Windows" src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows-000000">
   <img alt="Python 3.9+" src="https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white">
   <img alt="Zero dependencies" src="https://img.shields.io/badge/dependencies-0-22C55E">
-  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-6366F1"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-333333"></a>
 </p>
 
 <p>
