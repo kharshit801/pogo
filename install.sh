@@ -28,7 +28,8 @@ cat <<'LOGO'
 LOGO
 printf '\033[0m\n'
 
-[ "$(uname -s)" = "Darwin" ] || fail "pogo runs on macOS only."
+[ "$(uname -s)" = "Darwin" ] ||
+  fail "this installer is for macOS. On Windows, run this in PowerShell: irm https://raw.githubusercontent.com/kharshit801/pogo/main/install.ps1 | iex"
 command -v git >/dev/null 2>&1 || fail "git is missing. Install Apple's command line tools: xcode-select --install"
 command -v python3 >/dev/null 2>&1 || fail "python3 is missing. Install Apple's command line tools: xcode-select --install"
 python3 -c 'import sys; sys.exit(sys.version_info < (3, 9))' || fail "pogo needs Python 3.9 or newer."
