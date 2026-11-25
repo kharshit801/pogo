@@ -21,6 +21,10 @@ All notable changes to pogo are documented here. The format follows
 - End-to-end test workflow that turns all-apps mode on for real on macOS and Windows runners.
 - `pogo doctor` checks for Group Policy proxy locks and IPv6.
 
+### Changed
+- New logo. Both installers and pogo's home screen show it too, drawn with block characters
+  that every terminal font has.
+
 ### Fixed
 - macOS: in all-apps mode, pogo's own connections (direct rules, and the hop to the proxy) could
   fail with "Network is unreachable". pogo now adds a default route scoped to the real interface.
