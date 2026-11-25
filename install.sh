@@ -13,6 +13,21 @@ BIN_DIR="${POGO_BIN_DIR:-$HOME/.local/bin}"
 say()  { printf '\033[1m%s\033[0m\n' "$*"; }
 fail() { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 
+# pogo's logo, the same art as on pogo's home screen (made by scripts/logo_blocks.py)
+printf '\n\033[1m'
+cat <<'LOGO'
+ ▀█████████████████████▄
+  ▀█████████████████████
+    ▀▀██████████████████
+              ▄████████
+             ▄████████
+            ███████▀▀
+  ▄████████
+ ▄████████
+████████▀
+LOGO
+printf '\033[0m\n'
+
 [ "$(uname -s)" = "Darwin" ] || fail "pogo runs on macOS only."
 command -v git >/dev/null 2>&1 || fail "git is missing. Install Apple's command line tools: xcode-select --install"
 command -v python3 >/dev/null 2>&1 || fail "python3 is missing. Install Apple's command line tools: xcode-select --install"

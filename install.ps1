@@ -22,6 +22,25 @@ function Install-Pogo {
     function Warn([string]$text) { Write-Host $text -ForegroundColor Yellow }
     function Fail([string]$text) { Write-Host "error: $text" -ForegroundColor Red }
 
+    # --- pogo's logo, the same art as on pogo's home screen (made by scripts/logo_blocks.py) ---
+    # This file must stay ASCII, so # ^ _ stand for the full, upper-half and lower-half blocks.
+    $logo = @(
+        ' ^#####################_',
+        '  ^#####################',
+        '    ^^##################',
+        '              _########',
+        '             _########',
+        '            #######^^',
+        '  _########',
+        ' _########',
+        '########^'
+    )
+    Write-Host ''
+    foreach ($row in $logo) {
+        Write-Host ($row.Replace('#', [string][char]0x2588).Replace('^', [string][char]0x2580).Replace('_', [string][char]0x2584))
+    }
+    Write-Host ''
+
     # GitHub needs TLS 1.2, which older Windows PowerShell doesn't turn on by itself.
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12

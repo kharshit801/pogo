@@ -20,7 +20,7 @@ import subprocess
 import sys
 import time
 
-from . import __version__, config, helper, proxifier_import, sysproxy, system, tun, ui
+from . import __version__, config, helper, logo, proxifier_import, sysproxy, system, tun, ui
 from .launch import run_as_root, self_command
 from .rules import bypass_list, decide, is_ip_rule, normalize_pattern
 from .server import UpstreamError, open_via_upstream, serve
@@ -64,7 +64,15 @@ COMMANDS: set[str] = set()
 
 def print_home() -> None:
     cfg = config.load()
-    print(f"{ui.bold('pogo')} {ui.dim(__version__)} · route every app on your {system.MACHINE} through your proxy")
+    title = f"{ui.bold('pogo')} {ui.dim(__version__)}"
+    tagline = f"route every app on your {system.MACHINE} through your proxy"
+    art_width = max(len(line) for line in logo.LOGO) + 4
+    if ui.is_terminal() and shutil.get_terminal_size().columns >= art_width + len(tagline):
+        beside = {3: title, 4: tagline}  # the name sits next to the middle of the logo
+        for i, line in enumerate(logo.LOGO):
+            print(ui.bold(line.ljust(art_width)) + beside[i] if i in beside else ui.bold(line))
+    else:  # piped, or a narrow window: one plain line
+        print(f"{title} · {tagline}")
     print()
     print(f"  {status_line(cfg)}")
     if not config.is_configured(cfg):

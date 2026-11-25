@@ -16,7 +16,7 @@ from unittest import mock
 os.environ.setdefault("POGO_HOME", tempfile.mkdtemp(prefix="pogo-test-"))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from pogo import cli, config, proxifier_import  # noqa: E402
+from pogo import cli, config, logo, proxifier_import  # noqa: E402
 
 PROFILE = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ProxifierProfile version="101" platform="MacOSX" product_id="2" product_minver="200">
@@ -87,6 +87,24 @@ class OverviewTests(Base):
         for text in ("Get started", "Everyday", "pogo import", "rules add", "doctor", "reset",
                      "pogo help <command>", "not set up yet"):
             self.assertIn(text, out)
+
+    def home_screen(self, terminal: bool, columns: int = 80) -> str:
+        with mock.patch.object(cli.ui, "is_terminal", return_value=terminal), \
+                mock.patch.object(cli.shutil, "get_terminal_size", return_value=os.terminal_size((columns, 24))):
+            return run_cli()[1]
+
+    def test_home_screen_shows_the_logo_in_a_terminal(self):
+        out = self.home_screen(terminal=True)
+        for line in logo.LOGO:
+            self.assertIn(line, out)
+        beside_logo = [line for line in out.splitlines() if logo.LOGO[3] in line or logo.LOGO[4] in line]
+        self.assertIn("pogo", beside_logo[0])
+        self.assertIn("route every app", beside_logo[1])
+
+    def test_home_screen_skips_the_logo_when_piped_or_narrow(self):
+        for out in (self.home_screen(terminal=False), self.home_screen(terminal=True, columns=60)):
+            self.assertNotIn("█", out)
+            self.assertIn("route every app", out.splitlines()[0])
 
     def test_overview_shows_off_status_once_configured(self):
         self.configure()
