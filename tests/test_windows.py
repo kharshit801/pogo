@@ -6,6 +6,7 @@ import io
 import os
 import sys
 import tempfile
+import time
 import unittest
 import uuid
 import zipfile
@@ -243,6 +244,17 @@ class SystemTests(unittest.TestCase):
         self.assertFalse(system.pid_alive(2 ** 22 + 12345))
         self.assertIn("python", system.process_command(os.getpid()).lower())
         self.assertTrue(any("python" in name for name in system.process_names()))
+
+    def test_process_start_time(self):
+        now = time.time()
+        started = system.process_started(os.getpid())
+        self.assertIsNotNone(started)
+        self.assertTrue(now - 3600 < started <= now + 1, started)
+        self.assertIsNone(system.process_started(2 ** 22 + 12345))
+        self.assertTrue(system.same_process(os.getpid(), now))
+        self.assertTrue(system.same_process(os.getpid(), None))
+        self.assertFalse(system.same_process(os.getpid(), started - 60))  # PID reused since
+        self.assertFalse(system.same_process(2 ** 22 + 12345, now))
 
     def test_replace_and_remove(self):
         folder = Path(tempfile.mkdtemp())

@@ -330,7 +330,8 @@ class WinNet:
         except OSError:
             pass
         helper_pid = state.get("helper_pid")
-        if isinstance(helper_pid, int) and "tun2socks" in Path(system.process_command(helper_pid)).name.lower():
+        if (isinstance(helper_pid, int) and system.same_process(helper_pid, state.get("started"))
+                and "tun2socks" in Path(system.process_command(helper_pid)).name.lower()):
             system.kill(helper_pid)
 
 
@@ -765,15 +766,16 @@ def cleanup(report: Report) -> int:
         state = {}
     if not isinstance(state, dict):
         state = {}
-    pid = state.get("pid")
-    if isinstance(pid, int) and system.pid_alive(pid):
+    pid, started = state.get("pid"), state.get("started")
+    # After a crash or a restart the PID may belong to another program: only ever stop our own
+    if isinstance(pid, int) and system.same_process(pid, started) and config.is_pogo_process(pid):
         config.HOME_DIR.mkdir(parents=True, exist_ok=True)
         config.TUN_STOP.touch()  # a live worker cleans up after itself
         for _ in range(60):
             if not system.pid_alive(pid):
                 break
             time.sleep(0.1)
-        if system.pid_alive(pid):
+        if system.same_process(pid, started):
             system.kill(pid)
     default_net().cleanup(state)
     if state.get("system_proxy") and isinstance(state.get("listen"), str):

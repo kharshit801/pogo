@@ -32,6 +32,8 @@ if IS_WINDOWS:
     _kernel32.TerminateProcess.argtypes = [wintypes.HANDLE, wintypes.UINT]
     _kernel32.QueryFullProcessImageNameW.argtypes = [wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR,
                                                      ctypes.POINTER(wintypes.DWORD)]
+    _kernel32.GetProcessTimes.argtypes = [wintypes.HANDLE] + [ctypes.POINTER(wintypes.FILETIME)] * 4
+    _kernel32.GetProcessTimes.restype = wintypes.BOOL
     _kernel32.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
     _kernel32.WaitForSingleObject.restype = wintypes.DWORD
     _kernel32.CreateToolhelp32Snapshot.argtypes = [wintypes.DWORD, wintypes.DWORD]
@@ -139,6 +141,61 @@ def process_command(pid: int) -> str:
         finally:
             _kernel32.CloseHandle(handle)
     return run(["ps", "-o", "command=", "-p", str(pid)]).stdout
+
+
+_FILETIME_UNIX_EPOCH = 11_644_473_600  # seconds from 1601-01-01 (where FILETIME counts from) to 1970
+_libc = None
+
+
+def process_started(pid: int) -> float | None:
+    """When a process started (Unix time), or None if it isn't running or that can't be read."""
+    if pid <= 0:
+        return None
+    if IS_WINDOWS:
+        handle = _kernel32.OpenProcess(_PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not handle:
+            return None
+        try:
+            times = [wintypes.FILETIME() for _ in range(4)]  # creation, exit, kernel, user
+            if not _kernel32.GetProcessTimes(handle, *(ctypes.byref(t) for t in times)):
+                return None
+            ticks = (times[0].dwHighDateTime << 32) | times[0].dwLowDateTime  # 100 ns steps
+            return ticks / 10_000_000 - _FILETIME_UNIX_EPOCH
+        finally:
+            _kernel32.CloseHandle(handle)
+    return _mac_process_started(pid) if IS_MAC else None
+
+
+def _mac_process_started(pid: int) -> float | None:
+    # sysctl(KERN_PROC_PID) fills in a struct kinfo_proc, which starts with the start time
+    # (a struct timeval). Works for any process, root's included, and costs one system call.
+    global _libc
+    import ctypes as c
+    import struct
+    if _libc is None:
+        _libc = c.CDLL(None, use_errno=True)
+        _libc.sysctl.argtypes = [c.POINTER(c.c_int), c.c_uint, c.c_void_p, c.POINTER(c.c_size_t),
+                                 c.c_void_p, c.c_size_t]
+        _libc.sysctl.restype = c.c_int
+    mib = (c.c_int * 4)(1, 14, 1, pid)  # CTL_KERN, KERN_PROC, KERN_PROC_PID
+    buf = c.create_string_buffer(1024)  # sizeof(struct kinfo_proc) is 648
+    size = c.c_size_t(len(buf))
+    if _libc.sysctl(mib, 4, buf, c.byref(size), None, 0) != 0 or size.value < 16:
+        return None  # size 0: no such process
+    seconds, micros = struct.unpack_from("=qi", buf, 0)
+    return seconds + micros / 1_000_000 if seconds > 0 else None
+
+
+def same_process(pid: int, recorded_at) -> bool:
+    """Is `pid` still the process that a record written at `recorded_at` (Unix time) is about?
+    PIDs get reused, quickly on Windows and from scratch after every restart, so a live PID
+    alone proves nothing: a process that started after the record was written is another one."""
+    if not pid_alive(pid):
+        return False
+    if isinstance(recorded_at, bool) or not isinstance(recorded_at, (int, float)):
+        return True  # no time on record (written by an older pogo)
+    started = process_started(pid)
+    return started is None or started <= recorded_at + 2  # records are in whole seconds
 
 
 def terminate(pid: int) -> None:

@@ -24,6 +24,9 @@ All notable changes to pogo are documented here. The format follows
 ### Fixed
 - macOS: in all-apps mode, pogo's own connections (direct rules, and the hop to the proxy) could
   fail with "Network is unreachable". pogo now adds a default route scoped to the real interface.
+- After a crash or a restart, the process IDs pogo saved can belong to other programs. pogo could
+  then mistake one for its own, and `pogo reset` (running as admin) could stop it. A saved process
+  ID now only counts if that process started before pogo saved it.
 
 ## [0.2.0] - 2026-11-25
 
