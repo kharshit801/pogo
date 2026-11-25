@@ -1,6 +1,9 @@
 <div align="center">
 
-<img src="docs/assets/logo.svg" width="104" alt="pogo logo" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-white.png">
+  <img src="docs/assets/logo.png" width="115" alt="pogo logo" />
+</picture>
 
 # pogo
 
