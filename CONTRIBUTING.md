@@ -55,6 +55,10 @@ only on Windows, which CI runs on GitHub's Windows machines.
 
 - `docs/commands.md` is generated from the CLI's own help: `make docs`.
 - The terminal images in `docs/assets` are rendered from real output: `make screenshots`.
+- The logo is `docs/assets/logo.png`, plus `logo-white.png` for dark backgrounds. If it changes,
+  redraw its terminal version with `python3 scripts/logo_blocks.py` and paste the result into
+  `pogo/logo.py`, `install.sh` and `install.ps1` (`make test` checks all three). Then re-render
+  `social-preview.png` with `rsvg-convert docs/assets/social-preview.svg -o docs/assets/social-preview.png`.
 
 ## Pull requests
 
