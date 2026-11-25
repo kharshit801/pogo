@@ -164,6 +164,7 @@ Rules are checked top to bottom and the first match wins. Anything unmatched use
 | `pogo status` | what's running | `pogo rules …` | list / add / remove / check |
 | `pogo logs -f` | watch connections live | `pogo doctor` | diagnose problems |
 | `pogo run -- git pull` | one command via the proxy | `pogo reset` | emergency undo |
+| `pogo help on` | details and examples | `pogo uninstall` | remove pogo completely |
 
 Full reference with every option: **[docs/commands.md](docs/commands.md)**.
 
@@ -241,6 +242,18 @@ More in [docs/troubleshooting.md](docs/troubleshooting.md).
 ## Uninstall
 
 ```sh
+pogo uninstall
+```
+
+It turns pogo off and undoes its network changes, then removes its settings, logs, downloaded
+helpers, the saved password and the program itself (on Windows, also its PATH entry). It lists
+what it will remove and asks first. If you run pogo from a folder of your own, like a git clone,
+that folder stays: only the `pogo` command pointing to it goes.
+
+<details>
+<summary>Removing pogo by hand</summary>
+
+```sh
 pogo off
 rm -rf ~/.local/share/pogo ~/.config/pogo ~/.local/bin/pogo                   # macOS
 ```
@@ -250,8 +263,9 @@ pogo off
 Remove-Item -Recurse -Force "$env:USERPROFILE\.pogo"                          # Windows
 ```
 
-On Windows, also remove `%USERPROFILE%\.pogo\bin` from your user PATH, and the `pogo:` entry in
-Credential Manager if you like.
+On Windows, also remove `%USERPROFILE%\.pogo\bin` from your user PATH. The saved password is a
+`pogo` item in Keychain Access (macOS) or a `pogo:` entry in Credential Manager (Windows).
+</details>
 
 ## Roadmap
 
