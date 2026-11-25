@@ -109,6 +109,12 @@ def interactive() -> bool:
     return sys.stdin is not None and sys.stdin.isatty()
 
 
+def is_terminal() -> bool:
+    """Is the output going to a terminal (rather than a pipe or a file)?"""
+    out = sys.stdout
+    return out is not None and hasattr(out, "isatty") and out.isatty()
+
+
 def ask(label: str, default: str = "") -> str:
     suffix = f" [{default}]" if default else ""
     try:
