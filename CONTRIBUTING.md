@@ -59,6 +59,11 @@ only on Windows, which CI runs on GitHub's Windows machines.
   redraw its terminal version with `python3 scripts/logo_blocks.py` and paste the result into
   `pogo/logo.py`, `install.sh` and `install.ps1` (`make test` checks all three). Then re-render
   `social-preview.png` with `rsvg-convert docs/assets/social-preview.svg -o docs/assets/social-preview.png`.
+- The README header (`logo-lockup.svg`, `logo-lockup-dark.svg`), the social preview and the How
+  it works diagram share one vector copy of the mark, traced from `logo.png`. The wordmark is
+  built the same way as the mark: 30° lean, x-height and descender on the mark's bands, a sweep
+  on the leading corner. Keep the look minimal: the logo's ink (#333) and grays, thin lines, no
+  gradients, with a light and a dark version wherever GitHub's theme can change.
 
 ## Pull requests
 
