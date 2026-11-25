@@ -20,6 +20,9 @@ All notable changes to pogo are documented here. The format follows
   pinned checksums. Go is no longer needed on macOS.
 - End-to-end test workflow that turns all-apps mode on for real on macOS and Windows runners.
 - `pogo doctor` checks for Group Policy proxy locks and IPv6.
+- `pogo uninstall` removes pogo completely. It turns pogo off first, then deletes its settings,
+  logs, helpers, saved password and the program (on Windows, also its PATH entry), after
+  listing them and asking. A folder you run pogo from, like a git clone, is never deleted.
 
 ### Changed
 - New logo. Both installers and pogo's home screen show it too, drawn with block characters

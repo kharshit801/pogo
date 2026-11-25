@@ -56,11 +56,14 @@ They're downloaded through pogo's own proxy, so they work on a proxy-only networ
 | Wintun network adapter called **pogo** | all-apps mode | `pogo off` (it disappears when tun2socks stops) |
 | Routes `0.0.0.0/1`, `128.0.0.0/1` and a few host routes | all-apps mode | `pogo off`; they're in the *active* store, so a restart also clears them |
 | Windows proxy settings | basic mode only | `pogo off` restores your previous settings; if the PC restarts while pogo is on, a one-time sign-in task (RunOnce) restores them |
-| Credential Manager entry `pogo:<user>@<proxy>` | `pogo setup` / `pogo import` | delete it in Credential Manager |
-| Files in `%USERPROFILE%\.pogo` | always | delete the folder |
+| Credential Manager entry `pogo:<user>@<proxy>` | `pogo setup` / `pogo import` | `pogo uninstall`, or delete it in Credential Manager |
+| Files in `%USERPROFILE%\.pogo` (the program, settings, logs, helpers) | always | `pogo uninstall`, or delete the folder |
+| `%USERPROFILE%\.pogo\bin` in your user PATH | the installer | `pogo uninstall` |
 
 All-apps mode doesn't touch the Windows proxy settings at all, so nothing about it survives a
-restart.
+restart. To remove pogo completely, run `pogo uninstall`: it turns pogo off first, lists what it will
+remove and asks before it does. The last of the folder goes a moment after the command finishes,
+because Windows can't delete `pogo.cmd` while it's still running.
 
 ## How all-apps mode works on Windows
 
@@ -121,8 +124,8 @@ them for look-alikes there. Windows Terminal shows everything.
 
 ## Undo everything by hand
 
-`pogo reset` does all of this for you. If pogo itself is broken, in an **Administrator**
-PowerShell:
+`pogo reset` undoes pogo's network changes for you, and `pogo uninstall` removes pogo itself. If pogo
+is broken, in an **Administrator** PowerShell:
 
 ```powershell
 # capture routes (a restart also clears them)
