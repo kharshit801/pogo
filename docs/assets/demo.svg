@@ -69,7 +69,7 @@
     <text x="22" y="870" xml:space="preserve">  <tspan fill="#39C5CF">doctor         </tspan>Find problems and explain how to fix them</text>
     <text x="22" y="890" xml:space="preserve">  <tspan fill="#39C5CF">reset          </tspan>Emergency undo of every network change pogo made</text>
     <text x="22" y="910" xml:space="preserve"></text>
-    <text x="22" y="930" xml:space="preserve"><tspan fill="#7D8590">Advanced: start, stop, system, tun, helper</tspan></text>
+    <text x="22" y="930" xml:space="preserve"><tspan fill="#7D8590">Advanced: start, stop, system, tun, helper, uninstall</tspan></text>
     <text x="22" y="950" xml:space="preserve">Details and examples: <tspan fill="#39C5CF">pogo help &lt;command&gt;</tspan>   e.g. pogo help on</text>
   </g>
 </svg>
