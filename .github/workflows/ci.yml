@@ -40,3 +40,28 @@ jobs:
           Get-Content .\install.ps1 -Raw | Invoke-Expression
           & "$env:USERPROFILE\.pogo\bin\pogo.cmd" --version
           if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Windows uninstall (through the installed pogo command)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          & "$env:USERPROFILE\.pogo\bin\pogo.cmd" uninstall --yes
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          Start-Sleep -Seconds 8   # the folder holding pogo.cmd goes once pogo.cmd has exited
+          if (Test-Path "$env:USERPROFILE\.pogo") {
+            Get-ChildItem -Recurse "$env:USERPROFILE\.pogo"
+            throw "the .pogo folder is still there"
+          }
+          $path = [Environment]::GetEnvironmentVariable('Path', 'User')
+          if ($path -like '*\.pogo\bin*') { throw "the user PATH still has pogo in it: $path" }
+          Write-Host "uninstalled cleanly"
+      - name: macOS uninstall (in the layout install.sh creates)
+        if: runner.os == 'macOS'
+        run: |
+          export POGO_INSTALL_DIR="$RUNNER_TEMP/share/pogo" POGO_BIN_DIR="$RUNNER_TEMP/bin" POGO_HOME="$RUNNER_TEMP/pogo-home"
+          mkdir -p "$POGO_BIN_DIR" "$RUNNER_TEMP/share"
+          cp -R . "$POGO_INSTALL_DIR"   # what install.sh's git clone puts there
+          ln -s "$POGO_INSTALL_DIR/bin/pogo" "$POGO_BIN_DIR/pogo"
+          "$POGO_BIN_DIR/pogo" setup --host 10.0.0.1 --port 3128 --type http --user ci
+          "$POGO_BIN_DIR/pogo" uninstall --yes
+          test ! -e "$POGO_INSTALL_DIR" && test ! -L "$POGO_BIN_DIR/pogo" && test ! -e "$POGO_HOME"
+          echo "uninstalled cleanly"
