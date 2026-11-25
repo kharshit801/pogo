@@ -1,17 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="pogo: route every app on your Mac through your proxy">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="pogo: route every app on your Mac or PC through your proxy">
+  <!-- render with: rsvg-convert docs/assets/social-preview.svg -o docs/assets/social-preview.png -->
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0B1020"/>
       <stop offset="1" stop-color="#1B1745"/>
-    </linearGradient>
-    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#8B5CF6"/>
-      <stop offset="0.55" stop-color="#6366F1"/>
-      <stop offset="1" stop-color="#0EA5E9"/>
-    </linearGradient>
-    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
-      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
     </linearGradient>
     <radialGradient id="glow" cx="0.2" cy="0.35" r="0.6">
       <stop offset="0" stop-color="#6366F1" stop-opacity="0.35"/>
@@ -21,28 +13,12 @@
   <rect width="1280" height="640" fill="url(#bg)"/>
   <rect width="1280" height="640" fill="url(#glow)"/>
 
-  <!-- logo -->
-  <g transform="translate(110 150) scale(1.75)">
-    <rect width="128" height="128" rx="30" fill="url(#brand)"/>
-    <rect width="128" height="128" rx="30" fill="url(#shine)"/>
-    <g transform="translate(-3 -2)">
-      <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-width="6.5">
-        <path d="M28 44 C 44 44, 46 70, 58 70" stroke-opacity="0.7"/>
-        <path d="M28 70 L 58 70" stroke-opacity="0.7"/>
-        <path d="M28 96 C 44 96, 46 70, 58 70" stroke-opacity="0.7"/>
-        <path d="M58 70 C 64 28, 92 24, 100 58" stroke-width="7.5"/>
-      </g>
-      <circle cx="28" cy="44" r="5" fill="#FFFFFF" fill-opacity="0.85"/>
-      <circle cx="28" cy="70" r="5" fill="#FFFFFF" fill-opacity="0.85"/>
-      <circle cx="28" cy="96" r="5" fill="#FFFFFF" fill-opacity="0.85"/>
-      <circle cx="58" cy="70" r="9" fill="#FFFFFF"/>
-      <path d="M91 55 L101 64 L108 51" fill="none" stroke="#FFFFFF" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </g>
-  </g>
+  <!-- logo (white version, at its native size so it stays sharp) -->
+  <image href="logo-white.png" x="110" y="174" width="230" height="176"/>
 
   <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
     <text x="420" y="268" font-size="120" font-weight="800" fill="#FFFFFF" letter-spacing="-3">pogo</text>
-    <text x="424" y="334" font-size="38" font-weight="600" fill="#E2E8F0">Route every app on your Mac</text>
+    <text x="424" y="334" font-size="38" font-weight="600" fill="#E2E8F0">Route every app on your Mac or PC</text>
     <text x="424" y="382" font-size="38" font-weight="600" fill="#E2E8F0">through your proxy.</text>
     <text x="424" y="432" font-size="24" fill="#94A3B8">Open-source command-line alternative to Proxifier.</text>
   </g>
