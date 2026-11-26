@@ -7,6 +7,12 @@ All notable changes to pogo are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **`pogo setup-helper`**: an optional one-time setup, for computers you manage, so that
+  afterwards `pogo on` routes every app with no password (macOS) and no UAC prompt (Windows).
+  macOS installs a `visudo`-checked sudoers rule scoped to a root-owned wrapper; Windows creates
+  a highest-privileges scheduled task triggered on demand. `pogo on` falls back to prompting when
+  it isn't set up. Undo with `pogo setup-helper --remove`. It's a scoped privilege grant — see
+  SECURITY.md.
 - **Anonymous usage counting**, on by default, so the project can see how many people use pogo.
   It sends a random install id, the version, and your OS when you turn pogo on, and a heartbeat
   while it runs. Never your proxy, password, the sites you visit, or your IP. Turn it off with

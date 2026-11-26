@@ -99,6 +99,11 @@ pogo off        # back to normal
 Windows shows a permission prompt. Want to skip that? `pogo on --basic` only sets the system
 proxy (see [two modes](#two-modes)).
 
+**Tired of the prompt every time?** On a computer you set up yourself — a lab or shared PC — run
+**`pogo setup-helper`** once (it asks for admin that one time). After that, `pogo on` routes every
+app with no password and no prompt. Undo it with `pogo setup-helper --remove`. It's a deliberate,
+scoped grant of privilege, so only do it on machines you trust — see [SECURITY.md](SECURITY.md).
+
 ## How it works
 
 <p align="center">
