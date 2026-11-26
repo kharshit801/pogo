@@ -11,7 +11,7 @@ import socket
 import struct
 import urllib.parse
 
-from . import system
+from . import system, telemetry
 from .config import ConfigStore, tun_bind_index
 from .rules import decide, is_ip_rule
 
@@ -420,6 +420,21 @@ async def serve(store: ConfigStore, host: str, port: int, ready: asyncio.Event |
     log.info("listening on %s:%d (HTTP + SOCKS5)", host, port)
     if ready:
         ready.set()
-    await stop.wait()
-    server.close()
-    await server.wait_closed()
+    beat = asyncio.create_task(_heartbeat(stop)) if telemetry.enabled() else None
+    try:
+        await stop.wait()
+    finally:
+        if beat:
+            beat.cancel()
+        server.close()
+        await server.wait_closed()
+
+
+async def _heartbeat(stop: asyncio.Event) -> None:
+    """While the proxy runs, count this install as active every so often. Fire-and-forget, so it
+    never touches the connections pogo is handling."""
+    while not stop.is_set():
+        try:
+            await asyncio.wait_for(stop.wait(), timeout=telemetry.HEARTBEAT_SECONDS)
+        except asyncio.TimeoutError:
+            telemetry.heartbeat()
