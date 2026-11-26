@@ -14,6 +14,7 @@ from pathlib import Path
 from unittest import mock
 
 os.environ.setdefault("POGO_HOME", tempfile.mkdtemp(prefix="pogo-test-"))
+os.environ.setdefault("POGO_NO_TELEMETRY", "1")  # never emit a real event from tests
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pogo import cli, config, helper, system, tun, ui, winproxy  # noqa: E402
