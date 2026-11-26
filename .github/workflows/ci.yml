@@ -33,6 +33,34 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: CLI smoke test
         run: python tests/cli_smoke.py
+      - name: No-prompt helper installs for real (macOS sudoers + wrapper)
+        if: runner.os == 'macOS'
+        run: |
+          sudo "$(command -v python)" bin/pogo setup-helper
+          test -x /usr/local/libexec/pogo-tun
+          test -f /etc/sudoers.d/pogo
+          sudo visudo -cf /etc/sudoers.d/pogo        # the rule we wrote is valid sudoers
+          python - <<'PY'
+          import sys; sys.path.insert(0, ".")
+          from pogo import elevate
+          assert elevate.mac_ready(), "the wrapper + sudo rule should be active after setup"
+          PY
+          sudo "$(command -v python)" bin/pogo setup-helper --remove
+          test ! -e /usr/local/libexec/pogo-tun && test ! -e /etc/sudoers.d/pogo
+          python -c "import sys; sys.path.insert(0,'.'); from pogo import elevate; assert not elevate.mac_ready()"
+      - name: No-prompt helper installs for real (Windows scheduled task)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python bin/pogo setup-helper
+          if ($LASTEXITCODE -ne 0) { throw "setup-helper failed" }
+          python -c "import sys; sys.path.insert(0,'.'); from pogo import elevate; assert elevate.win_ready(), 'task missing after setup'"
+          if ($LASTEXITCODE -ne 0) { throw "the task was not created" }
+          python bin/pogo setup-helper --remove
+          if ($LASTEXITCODE -ne 0) { throw "remove failed" }
+          python -c "import sys; sys.path.insert(0,'.'); from pogo import elevate; assert not elevate.win_ready(), 'task still present after remove'"
+          if ($LASTEXITCODE -ne 0) { throw "the task was not removed" }
+          Write-Host "the no-prompt task was created and removed cleanly"
       - name: Install as a package
         run: |
           python -m pip install --quiet .
