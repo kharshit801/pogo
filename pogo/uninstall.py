@@ -32,7 +32,8 @@ PATH_ENTRY = r"%USERPROFILE%\.pogo\bin"  # what install.ps1 adds to the user's P
 # Everything pogo writes into its settings folder. If that folder isn't pogo's alone (POGO_HOME
 # pointing at a shared folder), only these go.
 OWN_FILES = ("config.json", "config.tmp", "pogo.pid", "pogo.log", "pogo.log.1", "tun.json", "tun.stop",
-             "tun.log", "tun.log.1", "tun.progress", "winproxy-backup.json", "restore-proxy.py")
+             "tun.log", "tun.log.1", "tun.progress", "winproxy-backup.json", "restore-proxy.py",
+             "telemetry.json")
 OWN_HELPERS = ("tun2socks", "tun2socks.exe", "wintun.dll")
 
 

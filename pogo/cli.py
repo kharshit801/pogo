@@ -20,7 +20,7 @@ import subprocess
 import sys
 import time
 
-from . import __version__, config, helper, logo, proxifier_import, sysproxy, system, tun, ui, uninstall
+from . import __version__, config, helper, logo, proxifier_import, sysproxy, system, telemetry, tun, ui, uninstall
 from .launch import run_as_root, self_command
 from .rules import bypass_list, decide, is_ip_rule, normalize_pattern
 from .server import UpstreamError, open_via_upstream, serve
@@ -56,7 +56,7 @@ SECTIONS = [
         ("reset", "Emergency undo of every network change pogo made"),
     ]),
 ]
-ADVANCED = "start, stop, system, tun, helper, uninstall"
+ADVANCED = "start, stop, system, tun, helper, telemetry, uninstall"
 
 PARSERS: dict[str, argparse.ArgumentParser] = {}   # "rules add" -> its parser, for `pogo help`
 COMMANDS: set[str] = set()
@@ -351,6 +351,10 @@ def _say_on(cfg: dict, all_apps: bool) -> None:
         print(f"{ui.green('● pogo is ON')} (basic) · apps that use the system proxy go through {where}")
         print(ui.dim("  terminal tools: pogo run -- <command>   ·   all apps: pogo off, then pogo on"))
     print(ui.dim("  watch traffic: pogo logs -f   ·   turn off: pogo off"))
+    notice = telemetry.record_on(all_apps)
+    if notice:
+        print()
+        print(ui.dim(notice))
 
 
 def cmd_off(args) -> int:
@@ -1014,6 +1018,17 @@ def cmd_tun(args) -> int:
     return tun.run_foreground(cfg, _report, dry_run=args.dry_run)
 
 
+def cmd_telemetry(args) -> int:
+    if args.state in ("on", "off"):
+        if not telemetry.configured():
+            ui.warn("this copy of pogo has no usage counting built in, so there's nothing to change")
+            return 0
+        telemetry.set_enabled(args.state == "on")
+    for line in telemetry.status_lines():
+        print(line)
+    return 0
+
+
 INSTALL_COMMAND = ("irm https://raw.githubusercontent.com/kharshit801/pogo/main/install.ps1 | iex"
                    if system.IS_WINDOWS else
                    "curl -fsSL https://raw.githubusercontent.com/kharshit801/pogo/main/install.sh | bash")
@@ -1301,6 +1316,16 @@ def build_parser() -> Parser:
                    "cleanly. A copy of pogo you run from a folder of your own (a git clone) is never deleted.",
                  ("pogo uninstall", "pogo uninstall --yes     don't ask first"))
     p.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
+
+    p = _command(sub, "telemetry", cmd_telemetry, "anonymous usage counting on/off",
+                 "Anonymous usage counting: it's on by default and sends a random id, the pogo version and\n"
+                 "your OS so the author can see how many people use pogo. Your proxy, password, the sites\n"
+                 "you visit and your IP are never sent. 'pogo telemetry' alone shows the current state.\n"
+                 "You can also turn it off with DO_NOT_TRACK=1 or POGO_NO_TELEMETRY=1.",
+                 ("pogo telemetry          show what's sent and whether it's on",
+                  "pogo telemetry off      stop counting this install",
+                  "pogo telemetry on       start again"))
+    p.add_argument("state", nargs="?", choices=["on", "off", "status"])
 
     COMMANDS.clear()
     COMMANDS.update(k for k in PARSERS if " " not in k)
