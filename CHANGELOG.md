@@ -4,6 +4,14 @@ All notable changes to pogo are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Anonymous usage counting**, on by default, so the project can see how many people use pogo.
+  It sends a random install id, the version, and your OS when you turn pogo on, and a heartbeat
+  while it runs. Never your proxy, password, the sites you visit, or your IP. Turn it off with
+  `pogo telemetry off`, `DO_NOT_TRACK=1`, or `POGO_NO_TELEMETRY=1`. See `docs/telemetry.md`.
+
 ## [0.3.0] - 2026-11-25
 
 ### Added
