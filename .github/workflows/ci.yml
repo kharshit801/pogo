@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+# POGO_NO_TELEMETRY keeps CI's real pogo runs from ever reaching a live analytics project.
+env:
+  POGO_NO_TELEMETRY: '1'
+
+
 jobs:
   test:
     name: ${{ matrix.os == 'windows-latest' && 'Windows' || 'macOS' }} · Python ${{ matrix.python }}
