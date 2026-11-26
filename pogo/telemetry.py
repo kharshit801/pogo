@@ -36,7 +36,7 @@ from pathlib import Path
 from . import __version__, config
 
 # PostHog project API key: public and write-only, safe to commit. Empty = telemetry off entirely.
-POSTHOG_KEY = ""
+POSTHOG_KEY = "phc_sCNWgCpyVnmMBrTx2G2LGHjGJ8DNhXa2vgUHyJgE7PvJ"
 POSTHOG_HOST = "https://us.i.posthog.com"   # or https://eu.i.posthog.com
 
 ENDPOINT = "/capture/"
