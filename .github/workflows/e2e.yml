@@ -11,6 +11,11 @@ on:
 permissions:
   contents: read
 
+# POGO_NO_TELEMETRY keeps CI's real pogo runs from ever reaching a live analytics project.
+env:
+  POGO_NO_TELEMETRY: '1'
+
+
 jobs:
   all-apps:
     name: All-apps capture on ${{ matrix.name }}

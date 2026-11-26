@@ -14,7 +14,8 @@ for _stream in (sys.stdout, sys.stderr):  # CI consoles on Windows use an old co
 
 REPO = Path(__file__).resolve().parent.parent
 ENV = {**os.environ, "POGO_HOME": tempfile.mkdtemp(prefix="pogo-smoke-"), "NO_COLOR": "1",
-       "PYTHONIOENCODING": "utf-8"}
+       "PYTHONIOENCODING": "utf-8",
+       "POGO_NO_TELEMETRY": "1"}
 
 
 def pogo(*args: str, expect: int = 0) -> str:

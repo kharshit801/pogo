@@ -26,7 +26,8 @@ REPO = Path(__file__).resolve().parent.parent.parent
 HOME = Path(tempfile.mkdtemp(prefix="pogo-e2e-"))
 PORT = 3129
 ENV = {**os.environ, "POGO_HOME": str(HOME), "POGO_PASSWORD": "secret", "NO_COLOR": "1",
-       "PYTHONIOENCODING": "utf-8"}
+       "PYTHONIOENCODING": "utf-8",
+       "POGO_NO_TELEMETRY": "1"}
 
 
 def pogo(*args: str, check: bool = True) -> str:
