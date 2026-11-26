@@ -28,7 +28,7 @@ import time
 from pathlib import Path
 from typing import Callable
 
-from . import config, sysproxy, system
+from . import config, elevate, sysproxy, system
 from .launch import self_command
 from .rules import bypass_list
 
@@ -669,8 +669,17 @@ def start_elevated(cfg: dict, report: Report) -> int:
 
         def alive() -> bool:
             return worker.poll() is None
+    elif elevate.win_ready():
+        # No UAC: a one-time scheduled task set up by `pogo setup-helper` runs the capture elevated.
+        if elevate.launch_windows() != 0:
+            report("fail", "couldn't start the pogo task; run: pogo setup-helper --remove, then pogo on")
+            return 1
+
+        def alive() -> bool:
+            return True   # the task runs detached; rely on the ready/fail lines and the timeout
     else:
         report("info", "Windows asks for permission to change network settings (UAC prompt)")
+        report("hint", "do this once so it stops asking: pogo setup-helper")
         try:
             handle = system.elevate(cmd)
         except PermissionError:
@@ -684,6 +693,7 @@ def start_elevated(cfg: dict, report: Report) -> int:
             return system.wait_process(handle, 0) is None
     try:
         offset, deadline = 0, time.monotonic() + 120
+        failed = False
         while True:
             running = alive()
             lines, offset = read_progress(progress, offset)
@@ -691,7 +701,8 @@ def start_elevated(cfg: dict, report: Report) -> int:
                 if kind == "ready":
                     return 0
                 report(kind, msg)
-            if not running:
+                failed = failed or kind == "fail"
+            if failed or not running:
                 break
             if time.monotonic() > deadline:
                 config.TUN_STOP.touch()  # don't leave a half-started capture behind
