@@ -8,7 +8,7 @@
 - **Rules:** [`rules`](#pogo-rules) · [`rules add`](#pogo-rules-add) · [`rules remove`](#pogo-rules-remove) · [`rules check`](#pogo-rules-check) · [`rules default`](#pogo-rules-default)
 - **Terminal tools:** [`run`](#pogo-run) · [`env`](#pogo-env)
 - **When something's wrong:** [`doctor`](#pogo-doctor) · [`reset`](#pogo-reset)
-- **Advanced:** [`start`](#pogo-start) · [`stop`](#pogo-stop) · [`system`](#pogo-system) · [`tun`](#pogo-tun) · [`helper`](#pogo-helper) · [`uninstall`](#pogo-uninstall)
+- **Advanced:** [`start`](#pogo-start) · [`stop`](#pogo-stop) · [`system`](#pogo-system) · [`tun`](#pogo-tun) · [`helper`](#pogo-helper) · [`telemetry`](#pogo-telemetry) · [`uninstall`](#pogo-uninstall)
 
 ## Everyday
 
@@ -432,6 +432,28 @@ options:
 
 examples:
   pogo helper
+```
+
+### `pogo telemetry`
+
+```text
+usage: pogo telemetry [-h] [{on,off,status}]
+
+Anonymous usage counting: it's on by default and sends a random id, the pogo version and
+your OS so the author can see how many people use pogo. Your proxy, password, the sites
+you visit and your IP are never sent. 'pogo telemetry' alone shows the current state.
+You can also turn it off with DO_NOT_TRACK=1 or POGO_NO_TELEMETRY=1.
+
+positional arguments:
+  {on,off,status}
+
+options:
+  -h, --help       show this help message and exit
+
+examples:
+  pogo telemetry          show what's sent and whether it's on
+  pogo telemetry off      stop counting this install
+  pogo telemetry on       start again
 ```
 
 ### `pogo uninstall`

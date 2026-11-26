@@ -194,7 +194,7 @@ How Proxifier works under the hood, and why pogo takes a different route:
 - **pogo only undoes its own changes.** Proxy settings that point anywhere else are left alone; on Windows your previous proxy settings are saved and put back.
 - **It can't strand you offline.** The capture removes itself if pogo stops, crashes or your network changes. Routes live in memory only, so a restart clears them, and on Windows a one-time sign-in task restores the proxy settings if the PC restarted while pogo was on. `pogo reset` cleans up even after a crash.
 - **Admin rights are only used to** create the interface and change routes (and the system proxy on macOS). See [SECURITY.md](SECURITY.md).
-- **No telemetry.** pogo only makes the connections you route through it, plus a test connection to `example.com` through your proxy when you set up, test, turn on, or run the doctor.
+- **Anonymous usage counting, on by default, one command to turn off.** So its author can see how many people use pogo, it sends a random install id, the version, and your OS when you turn it on. Never your proxy, password, the sites you visit, or your IP. Turn it off with `pogo telemetry off` (or `DO_NOT_TRACK=1`). Details: [docs/telemetry.md](docs/telemetry.md).
 
 ## FAQ
 

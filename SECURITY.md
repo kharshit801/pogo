@@ -44,6 +44,10 @@ a restart); neither needs admin rights.
 - **No shell.** Every external command is run with an argument list, never through a shell.
 - **Minimal changes, fully undone.** pogo only removes proxy settings that point at itself, and a
   watchdog removes the capture if pogo stops, crashes or your network changes.
+- **Telemetry is a count, never your data.** Anonymous usage counting (on by default) sends a
+  random install id, the version and your OS. It never sends your proxy, password, the sites you
+  visit, or your IP; geo lookup is off and the IP is overwritten before storage. Turn it off with
+  `pogo telemetry off` or `DO_NOT_TRACK=1`. See [docs/telemetry.md](docs/telemetry.md).
 
 ## Known limitations
 
