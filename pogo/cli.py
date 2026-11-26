@@ -20,7 +20,8 @@ import subprocess
 import sys
 import time
 
-from . import __version__, config, helper, logo, proxifier_import, sysproxy, system, telemetry, tun, ui, uninstall
+from . import (__version__, config, elevate, helper, logo, proxifier_import, sysproxy, system,
+               telemetry, tun, ui, uninstall)
 from .launch import run_as_root, self_command
 from .rules import bypass_list, decide, is_ip_rule, normalize_pattern
 from .server import UpstreamError, open_via_upstream, serve
@@ -56,7 +57,7 @@ SECTIONS = [
         ("reset", "Emergency undo of every network change pogo made"),
     ]),
 ]
-ADVANCED = "start, stop, system, tun, helper, telemetry, uninstall"
+ADVANCED = "start, stop, system, tun, helper, setup-helper, telemetry, uninstall"
 
 PARSERS: dict[str, argparse.ArgumentParser] = {}   # "rules add" -> its parser, for `pogo help`
 COMMANDS: set[str] = set()
@@ -270,7 +271,7 @@ def _stop_capture(timeout: float = 10.0) -> bool:
 
 
 def _report(kind: str, msg: str) -> None:
-    {"ok": ui.ok, "warn": ui.warn, "fail": ui.fail}.get(kind, ui.info)(msg)
+    {"ok": ui.ok, "warn": ui.warn, "fail": ui.fail, "hint": ui.hint}.get(kind, ui.info)(msg)
 
 
 # --- everyday commands ---------------------------------------------------------------
@@ -317,8 +318,11 @@ def cmd_on(args) -> int:
         if not tun.missing_helpers() or _install_helper(cfg, ask=not args.yes):
             if system.IS_WINDOWS:
                 started = tun.start_elevated(cfg, _report) == 0
+            elif elevate.mac_ready():
+                started = elevate.launch_mac() == 0
             else:
                 ui.info("capturing all apps needs admin rights, so macOS asks for your login password")
+                ui.hint("do this once so it stops asking: pogo setup-helper")
                 started = run_as_root("tun", "--background", home=str(config.HOME_DIR)) == 0
             if started:
                 _say_on(cfg, all_apps=True)
@@ -1018,6 +1022,30 @@ def cmd_tun(args) -> int:
     return tun.run_foreground(cfg, _report, dry_run=args.dry_run)
 
 
+def cmd_setup_helper(args) -> int:
+    removing = args.remove
+    elevated = system.is_admin() if system.IS_WINDOWS else os.geteuid() == 0
+    if elevated:
+        return elevate.remove(_report) if removing else elevate.install(_report)
+    if removing:
+        print(ui.bold("Removing the no-prompt helper"))
+    else:
+        print(ui.bold("Setting up pogo so 'pogo on' won't ask for permission again"))
+        ui.hint("only do this on computers you trust: see 'pogo help setup-helper'")
+    extra = ["--remove"] if removing else []
+    if system.IS_WINDOWS:
+        ui.info("Windows will ask for permission once, now")
+    else:
+        ui.info("macOS will ask for your login password once, now")
+    try:
+        return run_as_root("setup-helper", *extra, home=str(config.HOME_DIR))
+    except PermissionError:
+        ui.fail("admin permission was declined, so nothing was changed")
+        return 1
+    except KeyboardInterrupt:
+        return 130
+
+
 def cmd_telemetry(args) -> int:
     if args.state in ("on", "off"):
         if not telemetry.configured():
@@ -1326,6 +1354,17 @@ def build_parser() -> Parser:
                   "pogo telemetry off      stop counting this install",
                   "pogo telemetry on       start again"))
     p.add_argument("state", nargs="?", choices=["on", "off", "status"])
+
+    unprompted = ("without a password" if not system.IS_WINDOWS else "without a permission prompt")
+    p = _command(sub, "setup-helper", cmd_setup_helper, "stop 'pogo on' asking for permission",
+                 "One-time setup so 'pogo on' captures every app " + unprompted + ". It asks for admin\n"
+                 "rights once, now, and installs a small helper ("
+                 + ("a scheduled task" if system.IS_WINDOWS else "a sudoers rule and a root-owned wrapper")
+                 + ").\nUndo it with: pogo setup-helper --remove\n\n"
+                 "Only run this on computers you trust. Afterwards, anyone who can change pogo's files\n"
+                 "on this machine could run code with admin rights without a password. See SECURITY.md.",
+                 ("pogo setup-helper", "pogo setup-helper --remove"))
+    p.add_argument("--remove", action="store_true", help="undo the setup")
 
     COMMANDS.clear()
     COMMANDS.update(k for k in PARSERS if " " not in k)
