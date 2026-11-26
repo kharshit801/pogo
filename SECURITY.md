@@ -49,6 +49,28 @@ a restart); neither needs admin rights.
   visit, or your IP; geo lookup is off and the IP is overwritten before storage. Turn it off with
   `pogo telemetry off` or `DO_NOT_TRACK=1`. See [docs/telemetry.md](docs/telemetry.md).
 
+## `pogo setup-helper` (no-prompt capture)
+
+`pogo setup-helper` is an **optional** one-time setup, for computers you manage (a lab or shared
+PC), so that afterwards `pogo on` captures every app without a password or UAC prompt. It asks for
+admin rights once to install:
+
+- **macOS:** a root-owned wrapper at `/usr/local/libexec/pogo-tun` and a sudoers rule in
+  `/etc/sudoers.d/pogo` that lets your account run **only that wrapper** with `sudo`, no password.
+  The rule is checked with `visudo` before it's written.
+- **Windows:** a Scheduled Task (`pogo-capture`) that runs the capture with the highest
+  privileges, using your interactive token (no stored password). `pogo on` triggers it.
+
+This is a deliberate, scoped privilege grant. The trade-off: **anyone who can modify pogo's files
+on that machine could then run code as root/administrator without a password.** So:
+
+- Only run it on machines you trust and control.
+- Install pogo somewhere ordinary users can't write (for a multi-user PC, a root-owned location
+  rather than a per-user folder).
+- Undo it any time with `pogo setup-helper --remove`.
+
+Without `setup-helper`, `pogo on` elevates per run (password/UAC each time), which is the default.
+
 ## Known limitations
 
 - Like any tool you install as your user and then run with `sudo`, anything that can modify

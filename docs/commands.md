@@ -8,7 +8,7 @@
 - **Rules:** [`rules`](#pogo-rules) · [`rules add`](#pogo-rules-add) · [`rules remove`](#pogo-rules-remove) · [`rules check`](#pogo-rules-check) · [`rules default`](#pogo-rules-default)
 - **Terminal tools:** [`run`](#pogo-run) · [`env`](#pogo-env)
 - **When something's wrong:** [`doctor`](#pogo-doctor) · [`reset`](#pogo-reset)
-- **Advanced:** [`start`](#pogo-start) · [`stop`](#pogo-stop) · [`system`](#pogo-system) · [`tun`](#pogo-tun) · [`helper`](#pogo-helper) · [`telemetry`](#pogo-telemetry) · [`uninstall`](#pogo-uninstall)
+- **Advanced:** [`start`](#pogo-start) · [`stop`](#pogo-stop) · [`system`](#pogo-system) · [`tun`](#pogo-tun) · [`helper`](#pogo-helper) · [`setup-helper`](#pogo-setup-helper) · [`telemetry`](#pogo-telemetry) · [`uninstall`](#pogo-uninstall)
 
 ## Everyday
 
@@ -432,6 +432,27 @@ options:
 
 examples:
   pogo helper
+```
+
+### `pogo setup-helper`
+
+```text
+usage: pogo setup-helper [-h] [--remove]
+
+One-time setup so 'pogo on' captures every app without a password. It asks for admin
+rights once, now, and installs a small helper (a sudoers rule and a root-owned wrapper).
+Undo it with: pogo setup-helper --remove
+
+Only run this on computers you trust. Afterwards, anyone who can change pogo's files
+on this machine could run code with admin rights without a password. See SECURITY.md.
+
+options:
+  -h, --help  show this help message and exit
+  --remove    undo the setup
+
+examples:
+  pogo setup-helper
+  pogo setup-helper --remove
 ```
 
 ### `pogo telemetry`

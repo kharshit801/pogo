@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="677" height="976" viewBox="0 0 677 976" role="img" aria-label="pogo — zsh">
+<svg xmlns="http://www.w3.org/2000/svg" width="703" height="976" viewBox="0 0 703 976" role="img" aria-label="pogo — zsh">
   <title>pogo — zsh</title>
-  <rect x="0.5" y="0.5" width="676" height="975" rx="12" fill="#0D1117" stroke="#30363D"/>
-  <path d="M1 38 H676" stroke="#30363D"/>
+  <rect x="0.5" y="0.5" width="702" height="975" rx="12" fill="#0D1117" stroke="#30363D"/>
+  <path d="M1 38 H702" stroke="#30363D"/>
   <circle cx="22" cy="19" r="6" fill="#FF5F57"/><circle cx="42" cy="19" r="6" fill="#FEBC2E"/><circle cx="62" cy="19" r="6" fill="#28C840"/>
-  <text x="338.5" y="24" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#7D8590">pogo — zsh</text>
+  <text x="351.5" y="24" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#7D8590">pogo — zsh</text>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#C9D1D9" style="white-space:pre">
     <g shape-rendering="crispEdges">
     <rect x="30.45" y="75" width="8.45" height="10" fill="#FFFFFF"/>
@@ -69,7 +69,7 @@
     <text x="22" y="870" xml:space="preserve">  <tspan fill="#39C5CF">doctor         </tspan>Find problems and explain how to fix them</text>
     <text x="22" y="890" xml:space="preserve">  <tspan fill="#39C5CF">reset          </tspan>Emergency undo of every network change pogo made</text>
     <text x="22" y="910" xml:space="preserve"></text>
-    <text x="22" y="930" xml:space="preserve"><tspan fill="#7D8590">Advanced: start, stop, system, tun, helper, telemetry, uninstall</tspan></text>
+    <text x="22" y="930" xml:space="preserve"><tspan fill="#7D8590">Advanced: start, stop, system, tun, helper, setup-helper, telemetry, uninstall</tspan></text>
     <text x="22" y="950" xml:space="preserve">Details and examples: <tspan fill="#39C5CF">pogo help &lt;command&gt;</tspan>   e.g. pogo help on</text>
   </g>
 </svg>

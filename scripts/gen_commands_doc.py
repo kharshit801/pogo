@@ -23,7 +23,7 @@ ORDER = [
     ("Rules", ["rules", "rules add", "rules remove", "rules check", "rules default"]),
     ("Terminal tools", ["run", "env"]),
     ("When something's wrong", ["doctor", "reset"]),
-    ("Advanced", ["start", "stop", "system", "tun", "helper", "telemetry", "uninstall"]),
+    ("Advanced", ["start", "stop", "system", "tun", "helper", "setup-helper", "telemetry", "uninstall"]),
 ]
 
 

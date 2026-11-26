@@ -102,6 +102,12 @@ sequenceDiagram
 **Permission prompt.** Every `pogo on` shows one UAC prompt (unless your terminal already runs
 as administrator). `pogo off` never does: it asks the worker to stop through a file.
 
+**Stopping the prompt (lab PCs).** Run `pogo setup-helper` once (it asks for admin that one time).
+It creates a scheduled task that runs the capture with the highest privileges, and `pogo on`
+triggers it — which Windows does without a UAC prompt. Undo it with `pogo setup-helper --remove`.
+Only do this on machines you manage: afterwards anyone who can change pogo's files could run code
+as administrator without a prompt.
+
 **Antivirus and SmartScreen.** tun2socks is an open-source networking tool that isn't code-signed,
 so antivirus software sometimes quarantines it right after download. pogo notices and tells you;
 allow `%USERPROFILE%\.pogo\bin\tun2socks.exe` in your antivirus and run `pogo helper`.
